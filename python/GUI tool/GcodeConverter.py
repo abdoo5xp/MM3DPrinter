@@ -37,38 +37,9 @@ def Generateaction():
     SlicerGcodefile = files.openFile("SlicerGcode.gcode", 'a')
     parseGcodeFile(GcodeFile)
     files.closeFile(GcodeFile)
+    files.closeFile(SlicerGcodefile)
 
 
-
-
-SlicerGcodefile =None
-defaultMaterial = 'X'
-
-# parts entered to the Cura software
-partsMaterials = {'DefaultMaterial': 'X'}
-
-'''The main window'''
-root = Tk()
-root.title("Gcode Converter")
-root.geometry("600x400")
-
-'''creating the label widget'''
-WindowHeader = Label(root, text="Hello there ")
-GcodePathLabel = Label(root, text="Gcode Path ", fg="black").place(x=50, y=10)
-
-'''Creating path Entry for Gcode file '''
-GcodePathEntry = Entry(root, width=50, borderwidth=3, fg="purple")
-GcodePathEntry.place(x=50,y=35)
-GcodePathEntry.insert(0, "Enter your Gcode Path  ")
-
-'''Creating the Buttons'''
-Button(root, text="Browse", width=13, height=1, command=browseaction, fg="black", bg="grey").place(x=400, y=33)
-Button(root, text="Enter", width=13, height=1, command=Enteraction, fg="black", bg="grey").place(x=400, y=150)
-Button(root, text="Generate", width=13, height=1, command=Generateaction, fg="black", bg="grey").place(x=400, y=350)
-
-'''The list of parts '''
-PartsList = Listbox(root)
-PartsList.place(x=50, y=70)
 def updatePartsList():
     global PartsList
     listIdx = 0
@@ -104,11 +75,14 @@ def parseGcodeFile(fileObject):
                 firstExtrusionLen = float(Extrusionmatch.group(2))
             else:
                 lastExtrusionLen = float(Extrusionmatch.group(2))
-            
-        elif (newPartmatch) or (';End of Gcode' in line):
+
+        elif newPartmatch :
             writeGcode(firstExtrusionLen, lastExtrusionLen, CurrentPart)
             CurrentPart = newPartmatch.group()
             firstExtrusionLen = lastExtrusionLen
+
+        elif ';End of Gcode' in line:
+            writeGcode(firstExtrusionLen, lastExtrusionLen, CurrentPart)
 
 
 def writeGcode(first, last, partName):
@@ -116,17 +90,40 @@ def writeGcode(first, last, partName):
     SlicerGcodefile.write('G0 ' + partsMaterials[partName] + str(round(last - first, 5)) + "\n")
 
 
-
-
-def radiobtnaction(value):
-    #update a label or something
-    #r.get() to get the value of the clicked radio button to know which option is selected
-    # Radiobutton(root, text="OPtion1", variable=r, value=1, command=lambda: radiobtnaction(r.get())).pack()
-    # Radiobutton(root, text="OPtion2", variable=r, value=2, command=lambda: radiobtnaction(r.get())).pack()
-    # Radiobutton(root, text="OPtion3", variable=r, value=3, command=lambda: radiobtnaction(r.get())).pack()
-    # Radiobutton(root, text="OPtion4", variable=r, value=4, command=lambda: radiobtnaction(r.get())).pack()
+def materialSelectedaction():
     None
-'Another cool way of creating Radio buttons '
+    # global
+    # PartsList.selectedMaterial.get()
+
+
+SlicerGcodefile =None
+defaultMaterial = 'X'
+
+# parts entered to the Cura software
+partsMaterials = {'DefaultMaterial': 'X'}
+
+'''The main window'''
+root = Tk()
+root.title("Gcode Converter")
+root.geometry("600x400")
+
+'''creating the label widget'''
+WindowHeader = Label(root, text="Hello there ")
+GcodePathLabel = Label(root, text="Gcode Path ", fg="black").place(x=50, y=10)
+
+'''Creating path Entry for Gcode file '''
+GcodePathEntry = Entry(root, width=50, borderwidth=3, fg="purple")
+GcodePathEntry.place(x=50,y=35)
+GcodePathEntry.insert(0, "Enter your Gcode Path  ")
+
+'''Creating the Buttons'''
+Button(root, text="Browse", width=13, height=1, command=browseaction, fg="black", bg="grey").place(x=400, y=33)
+Button(root, text="Enter", width=13, height=1, command=Enteraction, fg="black", bg="grey").place(x=400, y=150)
+Button(root, text="Generate", width=13, height=1, command=Generateaction, fg="black", bg="grey").place(x=400, y=350)
+
+'''The list of parts '''
+PartsList = Listbox(root)
+PartsList.place(x=50, y=70, width=230)
 
 selectedMaterial = StringVar()
 selectedMaterial.set("M1")
@@ -138,13 +135,12 @@ MaterialsList =[
     ("M4", "E")
 ]
 
-def materialSelectedaction():
-    selectedMaterial.get()
-
 placeShift = 0
 for Material, MaterialCode in MaterialsList:
     Radiobutton(root, text=Material, value=MaterialCode, variable=selectedMaterial, command=materialSelectedaction).place(x=300, y=(70 + placeShift))
     placeShift +=20
+
+
 
 
 
