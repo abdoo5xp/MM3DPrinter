@@ -16,7 +16,7 @@ def browseaction():
     if root.filename:
         GcodePathEntry.delete(0, END)
         GcodePathEntry.insert(0, root.filename)
-
+    # TODO: check for invalid path given
 
 def Enteraction():
     global SlicerGcodefile
@@ -34,7 +34,14 @@ def Enteraction():
 def Generateaction():
     global SlicerGcodefile
     GcodeFile = files.openFile(GcodePathEntry.get(), 'r')
-    SlicerGcodefile = files.openFile("SlicerGcode.gcode", 'a')
+    # if the file 'SlicerGcode.gcode' already exist when we open the Gui
+    # then its an old version, delete it then create a new empty file with the same name.
+    SlicerGcodefile = files.openFile("SlicerGcode.gcode", 'w+')
+    
+    # add an empty line at the beginning to add the feed rate command later
+    SlicerGcodefile.write("\n\n\n\n\n") # 'G0'+' F'+'60'+'00'+'\n' = 5 bytes, so we added 5 x '\n'
+    # this method is used until we find a smarter way to do it.
+    
     parseGcodeFile(GcodeFile)
     files.closeFile(GcodeFile)
     files.closeFile(SlicerGcodefile)
@@ -64,13 +71,21 @@ def getPartsList(fileObject):
 
 
 def parseGcodeFile(fileObject):
+    global SlicerGcodefile
+    
     firstExtrusionLen = 0
     lastExtrusionLen = 0
     IsfirstFlag = 1
     CurrentPart = 'DefaultMaterial'
+    
+    Feedtemp = 0
+    
     for line in fileObject:
-        Extrusionmatch = re.search(r'(E)(\d.*)', line)
+        Extrusionmatch = re.search(r'(E)(\d+.\d+)', line)  # (E)(\d.*) <---- Wrong if Exxx is followed by words
         newPartmatch = re.search(r'.*\.stl', line)
+        
+        # the regex here recognize only G1 feed rate, which is the feed rate with given extrusion value 
+        FeedRateMatch = re.search(r'G1 (F)(\d+\.?\d*)(\s)' , line) 
 
         if Extrusionmatch:
             if IsfirstFlag:
@@ -86,11 +101,26 @@ def parseGcodeFile(fileObject):
 
         elif ';End of Gcode' in line:
             writeGcode(firstExtrusionLen, lastExtrusionLen, CurrentPart)
+        
+        # get the maximum feed rate in the Gcode
+        if FeedRateMatch:
+            # we transform Feed rate found as float because there is a float Feed rate
+            if(Feedtemp < float(FeedRateMatch.group(2))):
+                Feedtemp = float(FeedRateMatch.group(2))
+    
+    #usage of the new feed rate is gonna be in another place
+    #SlicerGcodefile.seek(0)
+    #tempLine = SlicerGcodefile.readline()
+    SlicerGcodefile.seek(0)
+    SlicerGcodefile.write("G0 F"+ str(int(Feedtemp)*2)  + "\n" )
+    #print('New Feed rate = 2 x Highest feedrate = '+str(int(Feedtemp)*2))
+
 
 
 def writeGcode(first, last, partName):
     global SlicerGcodefile
     SlicerGcodefile.write('G0 ' + partsMaterials[partName] + str(round(last - first, 5)) + "\n")
+
 
 
 def materialSelectedaction():
@@ -107,6 +137,8 @@ def materialSelectedaction():
 
 
 SlicerGcodefile =None
+''' The default material is the skirt printed at the start of the Gcode, 
+    we assign it to default material, material X '''
 defaultMaterial = 'X'
 
 # parts entered to the Cura software
@@ -135,9 +167,15 @@ Button(root, text="Generate", width=13, height=1, command=Generateaction, fg="bl
 PartsList = Listbox(root)
 PartsList.place(x=50, y=70, width=230)
 
-selectedMaterial = StringVar()
-selectedMaterial.set("X")
 
+
+selectedMaterial = StringVar()
+selectedMaterial.set("X") # initial value of the first value selected 
+
+
+
+''' Creating a list of tuples; each tuple has the material in 
+    the GUI and the corresponding motor axis to that material'''
 MaterialsList =[
     ("M1", "X"),
     ("M2", "Y"),
@@ -145,6 +183,8 @@ MaterialsList =[
     ("M4", "E")
 ]
 
+
+''' Creating the radio buttons '''
 placeShift = 0
 for Material, MaterialCode in MaterialsList:
     Radiobutton(root, text=Material, value=MaterialCode, variable=selectedMaterial, command=materialSelectedaction).place(x=300, y=(70 + placeShift))
