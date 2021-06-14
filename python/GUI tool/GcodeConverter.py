@@ -8,30 +8,8 @@ import time
 import os
 import re
 
-defaultMaterial = 'X'
 
-# parts entered to the Cura software
-partsColors = {'DefaultMaterial': 'X',
-               ';MESH:1_Body_Pupils_BLACK.stl': 'X',
-               ';MESH:3_Legs_Beak_YELLOW.stl': 'Y',
-               ';MESH:2_Belly_Eyes_WHITE.stl': 'Z'}
-
-
-'Every thing is widget, and the root is the main window on which yo pace your widgets '
-root = Tk()
-root.title("Gcode Converter")
-root.geometry("600x400") # f"{width}x{height}"
-
-'creating the label widget'
-WindowHeader = Label(root, text="Hello there ")
-GcodePathLabel = Label(root, text="Gcode Path ", fg="black").place(x=50, y=10)
-
-GcodePathEntry = Entry(root, width=50, borderwidth=3, fg="purple")
-GcodePathEntry.place(x=50,y=35)
-# e.grid(row=0, column=0, columnspan=3, padx=10, pady=10)
-GcodePathEntry.insert(0, "Enter your Gcode Path  ")
-
-
+"""""""""""""""""""""""""""""""""""""""""""""""Btns Actions """""""""""""""""""""""""""""""""""""""""""""""
 def browseaction():
     'Display the file dialogue'
     root.filename = filedialog.askopenfilename(initialdir=os.getcwd(), title="Select The Gcode File ", filetypes=(("gcode", "*.gcode"),))
@@ -39,36 +17,76 @@ def browseaction():
         GcodePathEntry.delete(0, END)
         GcodePathEntry.insert(0, root.filename)
 
-Button(root, text="Browse", width=13, height=1, command=browseaction, fg="black", bg="grey").place(x=400, y=33)
-
 
 def Enteraction():
     global SlicerGcodefile
     ' Get the path of the Gcode file from the text path '
     'Then open it using openfile function from your files library '
-    'Then call parse function that will parse this file and display the parts in the list, after adding them '
+    'Then call getPartsList function that will parse this file and display the parts in the list, after adding them '
     'in the dictionary with initial values for materials with the first material as the default material '
     GcodeFile = files.openFile(GcodePathEntry.get(), 'r')
-    SlicerGcodefile = files.openFile("SlicerGcode.gcode", 'a')
-    parseGcodeFile(GcodeFile)
+    getPartsList(GcodeFile)
+    files.closeFile(GcodeFile)
 
-
-Button(root, text="Enter", width=13, height=1, command=Enteraction, fg="black", bg="grey").place(x=400, y=150)
+    updatePartsList()
 
 
 def Generateaction():
-    None
+    global SlicerGcodefile
+    GcodeFile = files.openFile(GcodePathEntry.get(), 'r')
+    SlicerGcodefile = files.openFile("SlicerGcode.gcode", 'a')
+    parseGcodeFile(GcodeFile)
+    files.closeFile(GcodeFile)
 
+
+
+
+SlicerGcodefile =None
+defaultMaterial = 'X'
+
+# parts entered to the Cura software
+partsMaterials = {'DefaultMaterial': 'X'}
+
+'''The main window'''
+root = Tk()
+root.title("Gcode Converter")
+root.geometry("600x400")
+
+'''creating the label widget'''
+WindowHeader = Label(root, text="Hello there ")
+GcodePathLabel = Label(root, text="Gcode Path ", fg="black").place(x=50, y=10)
+
+'''Creating path Entry for Gcode file '''
+GcodePathEntry = Entry(root, width=50, borderwidth=3, fg="purple")
+GcodePathEntry.place(x=50,y=35)
+GcodePathEntry.insert(0, "Enter your Gcode Path  ")
+
+'''Creating the Buttons'''
+Button(root, text="Browse", width=13, height=1, command=browseaction, fg="black", bg="grey").place(x=400, y=33)
+Button(root, text="Enter", width=13, height=1, command=Enteraction, fg="black", bg="grey").place(x=400, y=150)
 Button(root, text="Generate", width=13, height=1, command=Generateaction, fg="black", bg="grey").place(x=400, y=350)
 
-listyBox = Listbox(root)
-listyBox.place(x=50, y=70)
+'''The list of parts '''
+PartsList = Listbox(root)
+PartsList.place(x=50, y=70)
+def updatePartsList():
+    global PartsList
+    listIdx = 0
+    for part in partsMaterials:
+        if part != 'DefaultMaterial':
+            PartsList.insert(listIdx, part[6:])
+            listIdx += 1
+    PartsList.xview()
+    PartsList.yview()
 
-i = 0
-ll = ['part1','part2','part3','part4','part5']
-for item in ll:
-    listyBox.insert(i, ll[i])
-    i += 1
+
+def getPartsList(fileObject):
+    global partsMaterials
+    for line in fileObject:
+        newPartmatch = re.search(r'.*\.stl', line)
+        if newPartmatch:
+            if newPartmatch.group() not in partsMaterials:
+                partsMaterials[newPartmatch.group()] = defaultMaterial
 
 
 def parseGcodeFile(fileObject):
@@ -91,15 +109,42 @@ def parseGcodeFile(fileObject):
             writeGcode(firstExtrusionLen, lastExtrusionLen, CurrentPart)
             CurrentPart = newPartmatch.group()
             firstExtrusionLen = lastExtrusionLen
-        #reset the object before going into the next iteration
-        Extrusionmatch = 0
-        newPartmatch   = 0
-
 
 
 def writeGcode(first, last, partName):
     global SlicerGcodefile
-    SlicerGcodefile.write('G0 '+ partsColors[partName] + str(round(last-first,5))+"\n")
+    SlicerGcodefile.write('G0 ' + partsMaterials[partName] + str(round(last - first, 5)) + "\n")
+
+
+
+
+def radiobtnaction(value):
+    #update a label or something
+    #r.get() to get the value of the clicked radio button to know which option is selected
+    # Radiobutton(root, text="OPtion1", variable=r, value=1, command=lambda: radiobtnaction(r.get())).pack()
+    # Radiobutton(root, text="OPtion2", variable=r, value=2, command=lambda: radiobtnaction(r.get())).pack()
+    # Radiobutton(root, text="OPtion3", variable=r, value=3, command=lambda: radiobtnaction(r.get())).pack()
+    # Radiobutton(root, text="OPtion4", variable=r, value=4, command=lambda: radiobtnaction(r.get())).pack()
+    None
+'Another cool way of creating Radio buttons '
+
+selectedMaterial = StringVar()
+selectedMaterial.set("M1")
+
+MaterialsList =[
+    ("M1", "X"),
+    ("M2", "Y"),
+    ("M3", "Z"),
+    ("M4", "E")
+]
+
+def materialSelectedaction():
+    selectedMaterial.get()
+
+placeShift = 0
+for Material, MaterialCode in MaterialsList:
+    Radiobutton(root, text=Material, value=MaterialCode, variable=selectedMaterial, command=materialSelectedaction).place(x=300, y=(70 + placeShift))
+    placeShift +=20
 
 
 
@@ -107,7 +152,8 @@ def writeGcode(first, last, partName):
 root.mainloop()
 
 'Closing the file at the end of the program '
-files.closeFile(SlicerGcodefile)
+if SlicerGcodefile:
+    files.closeFile(SlicerGcodefile)
 
 '''
 ; at the start, we are gonna provide length > buffer length (a = 15cm)
