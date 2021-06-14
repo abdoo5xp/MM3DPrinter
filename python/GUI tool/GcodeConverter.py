@@ -39,7 +39,7 @@ def Generateaction():
     files.closeFile(GcodeFile)
     files.closeFile(SlicerGcodefile)
 
-
+'''This function fills the GUI List with the parts in the PartsMaterial Dict'''
 def updatePartsList():
     global PartsList
     listIdx = 0
@@ -47,10 +47,13 @@ def updatePartsList():
         if part != 'DefaultMaterial':
             PartsList.insert(listIdx, part[6:])
             listIdx += 1
+    '''Make the list scrollable '''
     PartsList.xview()
     PartsList.yview()
+    '''Automatically select the first part '''
+    PartsList.select_set(0)
 
-
+'''This Function fills the PartsMaterial Dict with the parts found in the Gcode File '''
 def getPartsList(fileObject):
     global partsMaterials
     for line in fileObject:
@@ -91,9 +94,16 @@ def writeGcode(first, last, partName):
 
 
 def materialSelectedaction():
-    None
-    # global
-    # PartsList.selectedMaterial.get()
+    global PartsList
+    global selectedMaterial
+    global partsMaterials
+
+    '''The condition to avoid None type Error,
+       if the user selects a material without selecting a part '''
+    if PartsList.curselection():
+        partsMaterials[";MESH:"+PartsList.get(PartsList.curselection()[0])] = selectedMaterial.get()
+
+
 
 
 SlicerGcodefile =None
@@ -126,7 +136,7 @@ PartsList = Listbox(root)
 PartsList.place(x=50, y=70, width=230)
 
 selectedMaterial = StringVar()
-selectedMaterial.set("M1")
+selectedMaterial.set("X")
 
 MaterialsList =[
     ("M1", "X"),
@@ -139,9 +149,6 @@ placeShift = 0
 for Material, MaterialCode in MaterialsList:
     Radiobutton(root, text=Material, value=MaterialCode, variable=selectedMaterial, command=materialSelectedaction).place(x=300, y=(70 + placeShift))
     placeShift +=20
-
-
-
 
 
 'display the root window infinitely'
