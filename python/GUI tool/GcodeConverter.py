@@ -6,9 +6,15 @@ from tkinter import filedialog
 from tkinter import ttk
 import time
 import os
+import re
+
+defaultMaterial = 'X'
 
 # parts entered to the Cura software
-partsColors = {}
+partsColors = {'DefaultMaterial': 'X',
+               ';MESH:1_Body_Pupils_BLACK.stl': 'X',
+               ';MESH:3_Legs_Beak_YELLOW.stl': 'Y',
+               ';MESH:2_Belly_Eyes_WHITE.stl': 'Z'}
 
 
 'Every thing is widget, and the root is the main window on which yo pace your widgets '
@@ -33,23 +39,28 @@ def browseaction():
         GcodePathEntry.delete(0, END)
         GcodePathEntry.insert(0, root.filename)
 
-Button(root, text="Browse", width=13, height=1, command=browseaction, fg="black", bg="grey").place(x=400, y=33)
+Button(root, text="Browse", width=13, height=1, command=browseaction, fg="black", bg="grey").place(x=200, y=33)
 
 
 def Enteraction():
+    global SlicerGcodefile
+    print(" fck it ")
     ' Get the path of the Gcode file from the text path '
     'Then open it using openfile function from your files library '
     'Then call parse function that will parse this file and display the parts in the list, after adding them '
     'in the dictionary with initial values for materials with the first material as the default material '
-    None
+    GcodeFile = files.openFile(GcodePathEntry.get(), 'r')
+    SlicerGcodefile = files.openFile("SlicerGcode.gcode", 'a')
+    parseGcodeFile(GcodeFile)
 
-Button(root, text="Enter", width=13, height=1, command=Enteraction, fg="black", bg="grey").place(x=400, y=93)
+
+Button(root, text="Enter", width=13, height=1, command=Enteraction, fg="black", bg="grey").place(x=200, y=150)
 
 
 def Generateaction():
     None
 
-Button(root, text="Generate", width=13, height=1, command=Generateaction, fg="black", bg="grey").place(x=400, y=153)
+Button(root, text="Generate", width=13, height=1, command=Generateaction, fg="black", bg="grey").place(x=200, y=350)
 
 listyBox = Listbox(root)
 listyBox.place(x=50, y=70)
@@ -59,7 +70,40 @@ ll = ['part1','part2','part3','part4','part5']
 for item in ll:
     listyBox.insert(i, ll[i])
     i += 1
+
+
+def parseGcodeFile(fileObject):
+    firstExtrusionLen = 0
+    lastExtrusionLen = 0
+    IsfirstFlag = 1
+    CurrentPart = 'DefaultMaterial'
+    for line in fileObject:
+        Extrusionmatch = re.search(r'(E)(\d.*)', line)
+        newPartmatch = re.search(r'.*\.stl', line)
+
+        if Extrusionmatch:
+            if IsfirstFlag:
+                IsfirstFlag = 0
+                firstExtrusionLen = float(Extrusionmatch.group(2))
+            else:
+                lastExtrusionLen = float(Extrusionmatch.group(2))
+
+        if newPartmatch:
+            writeGcode(firstExtrusionLen, lastExtrusionLen, CurrentPart)
+            CurrentPart = newPartmatch.group()
+            firstExtrusionLen = lastExtrusionLen
+
+
+def writeGcode(first, last, partName):
+    global SlicerGcodefile
+    SlicerGcodefile.write('G0 '+ partsColors[partName] + str(last-first)+"\n")
+
+
+
 'display the root window infinitely'
 root.mainloop()
+
+'Closing the file at the end of the program '
+files.closeFile(SlicerGcodefile)
 
 
