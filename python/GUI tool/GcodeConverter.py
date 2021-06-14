@@ -39,12 +39,11 @@ def browseaction():
         GcodePathEntry.delete(0, END)
         GcodePathEntry.insert(0, root.filename)
 
-Button(root, text="Browse", width=13, height=1, command=browseaction, fg="black", bg="grey").place(x=200, y=33)
+Button(root, text="Browse", width=13, height=1, command=browseaction, fg="black", bg="grey").place(x=400, y=33)
 
 
 def Enteraction():
     global SlicerGcodefile
-    print(" fck it ")
     ' Get the path of the Gcode file from the text path '
     'Then open it using openfile function from your files library '
     'Then call parse function that will parse this file and display the parts in the list, after adding them '
@@ -54,13 +53,13 @@ def Enteraction():
     parseGcodeFile(GcodeFile)
 
 
-Button(root, text="Enter", width=13, height=1, command=Enteraction, fg="black", bg="grey").place(x=200, y=150)
+Button(root, text="Enter", width=13, height=1, command=Enteraction, fg="black", bg="grey").place(x=400, y=150)
 
 
 def Generateaction():
     None
 
-Button(root, text="Generate", width=13, height=1, command=Generateaction, fg="black", bg="grey").place(x=200, y=350)
+Button(root, text="Generate", width=13, height=1, command=Generateaction, fg="black", bg="grey").place(x=400, y=350)
 
 listyBox = Listbox(root)
 listyBox.place(x=50, y=70)
@@ -87,16 +86,20 @@ def parseGcodeFile(fileObject):
                 firstExtrusionLen = float(Extrusionmatch.group(2))
             else:
                 lastExtrusionLen = float(Extrusionmatch.group(2))
-
-        if newPartmatch:
+            
+        elif (newPartmatch) or (';End of Gcode' in line):
             writeGcode(firstExtrusionLen, lastExtrusionLen, CurrentPart)
             CurrentPart = newPartmatch.group()
             firstExtrusionLen = lastExtrusionLen
+        #reset the object before going into the next iteration
+        Extrusionmatch = 0
+        newPartmatch   = 0
+
 
 
 def writeGcode(first, last, partName):
     global SlicerGcodefile
-    SlicerGcodefile.write('G0 '+ partsColors[partName] + str(last-first)+"\n")
+    SlicerGcodefile.write('G0 '+ partsColors[partName] + str(round(last-first,5))+"\n")
 
 
 
@@ -106,4 +109,11 @@ root.mainloop()
 'Closing the file at the end of the program '
 files.closeFile(SlicerGcodefile)
 
+'''
+; at the start, we are gonna provide length > buffer length (a = 15cm)
+; after that, we're gonna provide length < buffer length (b = 8cm)
+;; buffer length = (c = 10cm)
 
+; if the length needed will exceed length given of current color, 
+;;feed the rest of it from the next color
+'''
