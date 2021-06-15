@@ -77,15 +77,25 @@ def parseGcodeFile(fileObject):
     lastExtrusionLen = 0
     IsfirstFlag = 1
     CurrentPart = 'DefaultMaterial'
+
     
     Feedtemp = 0
     
     for line in fileObject:
-        Extrusionmatch = re.search(r'(E)(\d+.\d+)', line)  # (E)(\d.*) <---- Wrong if Exxx is followed by words
+        Extrusionmatch = re.search(r'(E)(\d+\.?\d*)', line)  # (E)(\d.*) <---- Wrong if Exxx is followed by words
         newPartmatch = re.search(r'.*\.stl', line)
         
         # the regex here recognize only G1 feed rate, which is the feed rate with given extrusion value 
-        FeedRateMatch = re.search(r'G1 (F)(\d+\.?\d*)(\s)' , line) 
+        FeedRateMatch = re.search(r'G1 (F)(\d+\.?\d*)(\s)' , line)
+
+        '''Detect if Extrusion Resets in the middle Printing Part'''
+        IsResetExtruder = re.search(r'G92', line)
+
+        '''Detect if Extrusion Resets in the middle Printing Part'''
+        if IsResetExtruder:
+            #Get the length of part material before resetting extrusion
+            PartLength = lastExtrusionLen - firstExtrusionLen
+            firstExtrusionLen = 0
 
         if Extrusionmatch:
             if IsfirstFlag:
@@ -95,12 +105,18 @@ def parseGcodeFile(fileObject):
                 lastExtrusionLen = float(Extrusionmatch.group(2))
 
         elif newPartmatch :
-            writeGcode(firstExtrusionLen, lastExtrusionLen, CurrentPart)
+            #Add the length of part material before resetting extrusion to The last value
+            writeGcode(firstExtrusionLen, lastExtrusionLen+PartLength, CurrentPart)
+            #Reset PartLength
+            PartLength = 0
             CurrentPart = newPartmatch.group()
             firstExtrusionLen = lastExtrusionLen
 
         elif ';End of Gcode' in line:
-            writeGcode(firstExtrusionLen, lastExtrusionLen, CurrentPart)
+            #Add the length of part material before resetting extrusion to The last value
+            writeGcode(firstExtrusionLen, lastExtrusionLen+PartLength, CurrentPart)
+            #Reset PartLength
+            PartLength = 0
         
         # get the maximum feed rate in the Gcode
         if FeedRateMatch:
@@ -112,7 +128,7 @@ def parseGcodeFile(fileObject):
     #SlicerGcodefile.seek(0)
     #tempLine = SlicerGcodefile.readline()
     SlicerGcodefile.seek(0)
-    SlicerGcodefile.write("G0 F"+ str(int(Feedtemp)*2)  + "\n" )
+    SlicerGcodefile.write("G0 F"+ str(int(Feedtemp)*2) + "\n" )
     #print('New Feed rate = 2 x Highest feedrate = '+str(int(Feedtemp)*2))
 
 
