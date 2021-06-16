@@ -77,19 +77,28 @@ def parseGcodeFile(fileObject):
     lastExtrusionLen = 0
     IsfirstFlag = 1
     CurrentPart = 'DefaultMaterial'
-
-    
     Feedtemp = 0
     
     for line in fileObject:
-        Extrusionmatch = re.search(r'(E)(\d+\.?\d*)', line)  # (E)(\d.*) <---- Wrong if Exxx is followed by words
-        newPartmatch = re.search(r'.*\.stl', line)
         
+        Extrusionmatch = re.search(r'(E)(\d+\.?\d*)', line)  # (E)(\d.*) <---- Wrong if Exxx is followed by words
+        #Regex to find all extrusion values except with retraction and Resetting
+        #^ G\d *\s[F]?\d *\.?\d *\s?[X] +\d *\.?\d *\s?[Y] +\d *\.?\d *\s?(E)(\d +\.?\d *)
+
+        newPartmatch = re.search(r'.*\.stl', line)
+
+        '''Detect if Extrusion Retracts in the middle Printing Part'''
+        retractionMatch= re.search(r'^\w+\s\w+\s(E)(\d+\.?\d*)', line)
+
         # the regex here recognize only G1 feed rate, which is the feed rate with given extrusion value 
         FeedRateMatch = re.search(r'G1 (F)(\d+\.?\d*)(\s)' , line)
 
         '''Detect if Extrusion Resets in the middle Printing Part'''
         IsResetExtruder = re.search(r'G92', line)
+
+        '''Detect if Extrusion Retracts in the middle Printing Part and neglect'''
+        if retractionMatch:
+            continue
 
         '''Detect if Extrusion Resets in the middle Printing Part'''
         if IsResetExtruder:

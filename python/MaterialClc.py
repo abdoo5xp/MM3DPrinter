@@ -13,8 +13,8 @@ with open("D:\ITI\Graduation project\MM3DPrinter\python\GUI tool\SlicerGcode.gco
         elif 'Z' in line:
             Y_Material_Count+=float(line[line.find('Z')+1:])    
             
-    print("X_Material_Length = "+str(X_Material_Count) + "\n")
-    print("X_Material_Length = "+str(Y_Material_Count) + "\n")
-    print("X_Material_Length = "+str(Z_Material_Count))
+    print("X_Material_Length = "+str(round(X_Material_Count, 3)) + "\n")
+    print("X_Material_Length = "+str(round(Y_Material_Count, 3)) + "\n")
+    print("X_Material_Length = "+str(round(Z_Material_Count, 3)))
 
 
