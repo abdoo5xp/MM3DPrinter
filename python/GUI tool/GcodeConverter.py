@@ -1,4 +1,6 @@
 import files
+import tkinter
+import threading
 from tkinter import *
 from tkinter import messagebox
 # from PIL import ImageTK,Image
@@ -7,7 +9,18 @@ from tkinter import ttk
 import time
 import os
 import re
+import SerialConn as SC
+import SendGcodeSerial as SGS
 
+'''Global Variables'''
+SlicerGcodePath="SlicerGcode.gcode"
+SlicerGcodefile =None
+''' The default material is the skirt printed at the start of the Gcode, 
+    we assign it to default material, material X '''
+defaultMaterial = 'X'
+
+# parts entered to the Cura software
+partsMaterials = {'DefaultMaterial': 'X'}
 
 """""""""""""""""""""""""""""""""""""""""""""""Btns Actions """""""""""""""""""""""""""""""""""""""""""""""
 def browseaction():
@@ -17,6 +30,7 @@ def browseaction():
         GcodePathEntry.delete(0, END)
         GcodePathEntry.insert(0, root.filename)
     # TODO: check for invalid path given
+
 
 def Enteraction():
     global SlicerGcodefile
@@ -36,7 +50,7 @@ def Generateaction():
     GcodeFile = files.openFile(GcodePathEntry.get(), 'r')
     # if the file 'SlicerGcode.gcode' already exist when we open the Gui
     # then its an old version, delete it then create a new empty file with the same name.
-    SlicerGcodefile = files.openFile("SlicerGcode.gcode", 'w+')
+    SlicerGcodefile = files.openFile(SlicerGcodePath, 'w+')
     
     # add an empty line at the beginning to add the feed rate command later
     SlicerGcodefile.write("\n\n\n\n\n") # 'G0'+' F'+'60'+'00'+'\n' = 5 bytes, so we added 5 x '\n'
@@ -141,11 +155,9 @@ def parseGcodeFile(fileObject):
     #print('New Feed rate = 2 x Highest feedrate = '+str(int(Feedtemp)*2))
 
 
-
 def writeGcode(first, last, partName):
     global SlicerGcodefile
     SlicerGcodefile.write('G0 ' + partsMaterials[partName] + str(round(last - first, 5)) + "\n")
-
 
 
 def materialSelectedaction():
@@ -159,15 +171,15 @@ def materialSelectedaction():
         partsMaterials[";MESH:"+PartsList.get(PartsList.curselection()[0])] = selectedMaterial.get()
 
 
+def Sendaction():
+    SGS.send(SlicerGcodePath, ComPort.get())
 
 
-SlicerGcodefile =None
-''' The default material is the skirt printed at the start of the Gcode, 
-    we assign it to default material, material X '''
-defaultMaterial = 'X'
+def comPortProcess():
+    while True:
+        CommComboBox['values'] = SC.serial_ports()
+        time.sleep(0.3)
 
-# parts entered to the Cura software
-partsMaterials = {'DefaultMaterial': 'X'}
 
 '''The main window'''
 root = Tk()
@@ -186,18 +198,16 @@ GcodePathEntry.insert(0, "Enter your Gcode Path  ")
 '''Creating the Buttons'''
 Button(root, text="Browse", width=13, height=1, command=browseaction, fg="black", bg="grey").place(x=400, y=33)
 Button(root, text="Enter", width=13, height=1, command=Enteraction, fg="black", bg="grey").place(x=400, y=150)
-Button(root, text="Generate", width=13, height=1, command=Generateaction, fg="black", bg="grey").place(x=400, y=350)
+Button(root, text="Generate", width=13, height=1, command=Generateaction, fg="black", bg="grey").place(x=400, y=280)
+Button(root, text="Send", width=13, height=1, command=Sendaction, fg="black", bg="grey").place(x=400, y=320)
 
 '''The list of parts '''
 PartsList = Listbox(root)
 PartsList.place(x=50, y=70, width=230)
 
-
-
+'''Initialize the Radio Buttons '''
 selectedMaterial = StringVar()
 selectedMaterial.set("X") # initial value of the first value selected 
-
-
 
 ''' Creating a list of tuples; each tuple has the material in 
     the GUI and the corresponding motor axis to that material'''
@@ -208,7 +218,6 @@ MaterialsList =[
     ("M4", "E")
 ]
 
-
 ''' Creating the radio buttons '''
 placeShift = 0
 for Material, MaterialCode in MaterialsList:
@@ -216,12 +225,21 @@ for Material, MaterialCode in MaterialsList:
     placeShift +=20
 
 
+''' COMM PORTS COMBO BOX '''
+ComPort = tkinter.StringVar()
+ComPort.set("NO COM")
+CommComboBox = ttk.Combobox(root, width=10, height=1, textvariable=ComPort)
+CommComboBox['values'] = SC.serial_ports()
+CommComboBox['state'] = 'readonly'
+CommComboBox.place(x=300, y=320)
+portThread = threading.Thread(target=comPortProcess)
+portThread.setDaemon(True)
+
+
+
+portThread.start()
 'display the root window infinitely'
 root.mainloop()
-
-'Closing the file at the end of the program '
-if SlicerGcodefile:
-    files.closeFile(SlicerGcodefile)
 
 '''
 ; at the start, we are gonna provide length > buffer length (a = 15cm)
