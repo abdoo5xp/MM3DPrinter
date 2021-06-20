@@ -7,7 +7,9 @@
 
 
 #include <stdint.h>
+#include <stm32f4xx.h>
 #include <stm32f4xx_hal_tim.h>
+
 #include "../../lib/Bit_Mask.h"
 #include "../../lib/Bit_Math.h"
 #include "../../lib/Error_codes.h"
@@ -49,7 +51,7 @@ Status_e SERVO_enuInit(Servo_Angles_e InitAngle)
 	ServoOCInitConfigs.Pulse =	(InitAngle * FREQUENCY_PERIOD_TICKS )/100.0;
 	ServoOCInitConfigs.OCPolarity = TIM_OCPOLARITY_LOW;
 	ServoOCInitConfigs.OCIdleState = TIM_OCIDLESTATE_RESET;
-	ServoOCInitConfigs.OCFastMode = TIM_OCFAST_DISABLE;
+	ServoOCInitConfigs.OCFastMode = TIM_OCFAST_ENABLE;
 
 	Return_status = HAL_TIM_PWM_Init(&ServoConfigs);
 	Return_status |= HAL_TIM_PWM_ConfigChannel(&ServoConfigs, &ServoOCInitConfigs, TIM_CHANNEL_4);
@@ -60,11 +62,14 @@ Status_e SERVO_enuInit(Servo_Angles_e InitAngle)
 
 Status_e SERVO_enuChangeAngle(Servo_Angles_e Servo_Angle)
 {
+
 	uint8_t Return_status;
+
 	ServoOCInitConfigs.Pulse =	(Servo_Angle * FREQUENCY_PERIOD_TICKS )/100.0;
 
-	Return_status = HAL_TIM_PWM_ConfigChannel(&ServoConfigs, &ServoOCInitConfigs, TIM_CHANNEL_4);
 
+	Return_status = HAL_TIM_PWM_ConfigChannel(&ServoConfigs, &ServoOCInitConfigs, TIM_CHANNEL_4);
+	Return_status |= HAL_TIM_PWM_Start(&ServoConfigs,TIM_CHANNEL_4);
 	return Return_status;
 }
 
@@ -72,8 +77,8 @@ Status_e SERVO_enuChangeAngle(Servo_Angles_e Servo_Angle)
 Status_e SERVO_enuStart()
 {	uint8_t Return_status;
 
-	Return_status = HAL_TIM_PWM_Start();
-	return Return_status;
+Return_status = HAL_TIM_PWM_Start(&ServoConfigs,TIM_CHANNEL_4);
+return Return_status;
 }
 
 
@@ -86,16 +91,19 @@ void HAL_TIM_PWM_MspInit(TIM_HandleTypeDef *htim)
 {
 	gpio_pinConfig_t TimerConfigPin;
 	TimerConfigPin.port  = GPIO_PORTA;
-	TimerConfigPin.mode  = GPIO_MODE_OUTPUT;
+	TimerConfigPin.mode  = GPIO_MODE_AF;
+
 	TimerConfigPin.pupd  = GPIO_NO_PULL;
 	TimerConfigPin.otype = GPIO_OTYPE_PUSH_PULL;
+
 	TimerConfigPin.pinNum= GPIO_PIN_3;
 	TimerConfigPin.AF    = GPIO_AF1_TIM1_TIM2;
+
 	TimerConfigPin.ospeed=GPIO_SPEED_HIGH;
 
-	trace_printf("RCC-1  Enable Return = %d ",RCC_ControlAHB1PeriClk(RCC_AHB1_PREPH_GPIOA, RCC_PREPH_ENABLE));
-	trace_printf("RCC-2 Enable Return = %d ",RCC_ControlAPB1PeriClk(RCC_APB1_PREPH_TIM2, RCC_PREPH_ENABLE));
-	trace_printf("GPIO Enable Return = %d ",GPIO_InitPin(&TimerConfigPin));
+	trace_printf("RCC-1  Enable Return = %d\n ",RCC_ControlAHB1PeriClk(RCC_AHB1_PREPH_GPIOA, RCC_PREPH_ENABLE));
+	trace_printf("RCC-2 Enable Return = %d\n ",RCC_ControlAPB1PeriClk(RCC_APB1_PREPH_TIM2, RCC_PREPH_ENABLE));
+	trace_printf("GPIO Enable Return = %d\n ",GPIO_InitPin(&TimerConfigPin));
 
 }
 

@@ -11,6 +11,6 @@
 
 
 
-static void HAL_TIM_PWM_MspInit(TIM_HandleTypeDef *htim);
+//void HAL_TIM_PWM_MspInit(TIM_HandleTypeDef *htim);
 
 #endif /* SERVO_PRIV_H_ */

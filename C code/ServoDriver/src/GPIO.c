@@ -5,10 +5,10 @@
  *      Author: abdoo
  */
 #include <stdint.h>
-#include "../../../lib/Bit_Mask.h"
-#include "../../../lib/Bit_Math.h"
-#include "../../../lib/STM32_F407_Registers.h"
-#include "../../../lib/Error_codes.h"
+#include "../../lib/Bit_Mask.h"
+#include "../../lib/Bit_Math.h"
+#include "../../lib/STM32_F407_Registers.h"
+#include "../../lib/Error_codes.h"
 #include "GPIO.h"
 
 #define NULL 		(void *)0
