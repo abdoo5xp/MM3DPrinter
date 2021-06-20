@@ -1,16 +1,27 @@
 /*
- * IR_cfg.h
+ * LS_cfg.h
  *
  *  Created on: Jun 20, 2021
  *      Author: abdoo
  */
 
-#ifndef IR_CFG_H_
-#define IR_CFG_H_
+#ifndef LS_CFG_H_
+#define LS_CFG_H_
 
-/*Configure if the IR Sensor returns zero if anything is detected or one */
-#define IR_STATE_ON 	1
-#define IR_STATE_OFF 	0
+
+
+typedef struct{
+	void * port;
+	uint32_t gpioPinNum;
+}LS_Config_s;
+
+/* Number of limit switches */
+#define LS_INTANCES_NUMBER	2
+
+/*Configure if the LS Sensor returns zero if is pressed or one */
+#define LS_STATE_ON 	1
+#define LS_STATE_OFF 	0
+
 
 /*		in range {  GPIO_PORTA ,
  	 	 	 	 	GPIO_PORTB ,
@@ -23,10 +34,8 @@
 */
 
 
-#define IR_GPIO_PORT	GPIO_PORTA
 
-
-/* Note: Before Selecting the Pin make sure it is available mat5o4e4 bdema8k xD 
+/*
 in range { GPIO_PIN_0	,
  *		   GPIO_PIN_1  ,
  *		   GPIO_PIN_2  ,
@@ -44,10 +53,22 @@ in range { GPIO_PIN_0	,
  *			GPIO_PIN_14 ,
  *			GPIO_PIN_15 }
  */
-#define IR_GPIO_PINNUM	GPIO_PIN_0
+
+
+const LS_Config_s LS_instances[LS_INTANCES_NUMBER]=
+{
+	[0]={
+		.port = GPIO_PORTB,
+		.gpioPinNum = GPIO_PIN_2,
+	},
+
+	[1]={
+		.port = GPIO_PORTB,
+		.gpioPinNum = GPIO_PIN_5,
+	},
+
+};
 
 
 
-
-
-#endif /* IR_CFG_H_ */
+#endif /* LS_CFG_H_ */
