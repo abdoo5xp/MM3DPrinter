@@ -4,6 +4,7 @@ from tkinter import messagebox
 import threading
 import files
 import re
+import os
 
 '''The data will be sent 
     The first Two bytes will be the Number of Bytes the STM will receive 
@@ -21,6 +22,7 @@ Sendtask = 0
 PRECISION = 1000
 
 def send(SlicerGcodePath, ComPort):
+    print('Here')
     global serialPort, Sendtask,SlicerGcodeFile
     if CheckGcodeFileSize(SlicerGcodePath):
         SlicerGcodeFile = files.openFile(SlicerGcodePath, 'r')
@@ -49,7 +51,7 @@ def sendNumberOfBytes():
         if line != "\n":
             line_count += 1
     '''Sending the Lines Count in the first two bytes '''
-    serialPort.send(line_count.to_bytes(2, "little"))
+    serialPort.write(line_count.to_bytes(2, "little"))
 
 
 def sendData():
@@ -71,10 +73,8 @@ def sendData():
                      you can have a state machine if you have received a character then start concatenating 
                      the upcoming bytes till you form your number (find another character) 
             '''
-            if ExtrusionLengthNumber < 65536:
-                ExtrusionLengthBytes = int(ExtrusionLengthNumber).to_bytes(2, "little")
-            else:
-                ExtrusionLengthBytes = int(ExtrusionLengthNumber).to_bytes(3, "little")
+
+            ExtrusionLengthBytes = int(ExtrusionLengthNumber).to_bytes(3, "little")
 
             serialPort.write(ExtrusionLengthBytes)
 
@@ -94,4 +94,17 @@ def sendHandler():
 
 
 def CheckGcodeFileSize(GcodeFilePath):
-    None
+    # to use this function, make sure that you have imported 'os'
+    '''
+    The python os module has stat() function where we can pass the file name as argument. 
+    This function returns a tuple structure that contains the file information. We can 
+    then get its st_size property to get the file size in bytes.
+    '''
+    file_stats = os.stat(GcodeFilePath)
+
+    # 64 KB limit, this will give us a 4,681 max number  of lines
+    if (file_stats.st_size >= 65536):      
+        print(f'File Size in Bytes = '+str(round(file_stats.st_size/1024,3))+ ' KB')
+        return False
+    else:
+        return True

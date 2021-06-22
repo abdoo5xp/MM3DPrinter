@@ -1,0 +1,29 @@
+This is a Heater Driver. this driver is in HAL layer. 
+This Heater Driver operates using PWM from timer 4.
+The Driver initially will be able to output a PWM signal on Channel 1 ; however, this can be re-configured later.
+ ---------------------------------------------------------------
+For changing Channels used in timer 4:
+/* options are :>> 1,2,3,4,All
+ * Timer 4 channel  1:>> PB6  (not available in stm kit)
+ * Timer 4 channel  2:>> PB7
+ * Timer 4 channel  3:>> PD14
+ * Timer 4 channel  4:>> PD13 (not available in stm kit)
+ * use Channel 3 or 4 if you want to connect on the other side of the board */
+ --------------------------------------------------------------- 
+ /*No of Ticks = Timer_Tick_freq / Desired Frequency*/
+ We are working with 84,000,000 Hz and the available prescaler are:>> .../64/128
+ Since TIM3 and TIM4 are 16-bit timers, max value for timer = 65535.
+  
+ Depending on the material of the heater and the characteristics of the mosfet, the frequency of the PWM
+ signal that can affect the heater coil can be decided. Until this calculation is done, we can provide 
+ calculation for the range of frequencies:>> 
+ 100Hz  -> prescaler /128, ticks in register: 6563
+ 1KHz   -> prescaler /128, ticks in register: 656
+ 
+ 10KHz -> prescaler /128, ticks in register:  66
+ 		OR
+ 	   -> prescaler /64, ticks in register:  131
+ 	   
+ 100KHz -> prescaler /64, ticks in register: 13
+ ---------------------------------------------------------------
+ 

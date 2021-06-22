@@ -59,6 +59,7 @@ def Generateaction():
     parseGcodeFile(GcodeFile)
     files.closeFile(GcodeFile)
     files.closeFile(SlicerGcodefile)
+   
 
 '''This function fills the GUI List with the parts in the PartsMaterial Dict'''
 def updatePartsList():
@@ -197,7 +198,7 @@ GcodePathEntry.insert(0, "Enter your Gcode Path  ")
 
 '''Creating the Buttons'''
 Button(root, text="Browse", width=13, height=1, command=browseaction, fg="black", bg="grey").place(x=400, y=33)
-Button(root, text="Enter", width=13, height=1, command=Enteraction, fg="black", bg="grey").place(x=400, y=150)
+Button(root, text="Enter", width=13, height=1, command=Enteraction, fg="black", bg="grey").place(x=400, y=63)
 Button(root, text="Generate", width=13, height=1, command=Generateaction, fg="black", bg="grey").place(x=400, y=280)
 Button(root, text="Send", width=13, height=1, command=Sendaction, fg="black", bg="grey").place(x=400, y=320)
 
