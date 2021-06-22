@@ -10,6 +10,9 @@ import re
     Then 1 byte -> character "X" or "Y" or "Z" or "E" 
     Then 2 Bytes the Length in millimeter multiplied by 1000 to avoid using floating point numbers in STM 
     ***The Least Significant Byte will be sent first*** 
+
+    Add a check on the Size of the Slicer.gcode if it exceeds 65KB display an error message to the user 
+    and terminate the operation 
 '''
 
 serialPort = None
@@ -19,22 +22,24 @@ PRECISION = 1000
 
 def send(SlicerGcodePath, ComPort):
     global serialPort, Sendtask,SlicerGcodeFile
-    SlicerGcodeFile = files.openFile(SlicerGcodePath, 'r')
-    if SlicerGcodeFile:
-        if ComPort != "NO COM":
-            if Sendtask == 0:
-                Sendtask = 1
-                sendprocess = threading.Thread(target=sendHandler)
-                sendprocess.setDaemon(True)
-                serialPort = serial.Serial(ComPort, 9600, timeout=1)
-                sendprocess.start()
+    if CheckGcodeFileSize(SlicerGcodePath):
+        SlicerGcodeFile = files.openFile(SlicerGcodePath, 'r')
+        if SlicerGcodeFile:
+            if ComPort != "NO COM":
+                if Sendtask == 0:
+                    Sendtask = 1
+                    sendprocess = threading.Thread(target=sendHandler)
+                    sendprocess.setDaemon(True)
+                    serialPort = serial.Serial(ComPort, 9600, timeout=1)
+                    sendprocess.start()
+                else:
+                    messagebox.showerror("Sending Error", "Wait till this Transmission is complete \n")
             else:
-                messagebox.showerror("Sending Error", "Wait till this Transmission is complete \n")
+                messagebox.showerror("Error", "No COM Port is selected ")
         else:
-            messagebox.showerror("Error", "No COM Port is selected ")
+            messagebox.showerror("Error", "Error Slicer Gcode File Not Found ")
     else:
-        messagebox.showerror("Error", "Error Slicer Gcode File Not Found ")
-
+        messagebox.showerror("Error", "Error Slicer Gcode file exceeds Maximum Limit ")
 
 def sendNumberOfBytes():
     global SlicerGcodeFile, serialPort
@@ -86,3 +91,7 @@ def sendHandler():
     files.closeFile(SlicerGcodeFile)
     '''Refresh the Send task Flag'''
     Sendtask=0
+
+
+def CheckGcodeFileSize(GcodeFilePath):
+    None
