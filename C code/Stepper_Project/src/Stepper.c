@@ -49,6 +49,10 @@ uint64_t Stepper_TimerPwm[4] =
 };
 
 
+typedef void (*PtrNotify)(void);
+
+PtrNotify AppNotify ;
+
 static uint32_t Stepper_Id;
 
 /************************************************Stepper Speed*************************************************************/
@@ -191,7 +195,7 @@ RT_Debug Stepper_StepsTime(uint32_t StepperId ,uint32_t Copy_TimerBasePeriodTick
 
 	/*****************Register Stop PWM function******************************
 	SW_TimerRegisterCbf(Stepper_StopPwm,Stepper_StepsTime_ms,SW_Timer_Mode_Once);
-	*************************************************************************/
+	 *************************************************************************/
 
 
 	/* 84,000,000 / desired frequency */
@@ -294,5 +298,24 @@ void TIM8_BRK_TIM12_IRQHandler()
 	trace_printf("StepperId = %d\n",Stepper_Id);
 
 	Stepper_TimerBaseStop_INT();
+
+	AppNotify();
 }
 
+
+RT_Debug Stepper_SetCallBack(PtrNotify Stepper_StopNotify)
+{
+	RT_Debug Return_status = RT_SUCCESS ;
+
+	if (Stepper_StopNotify)
+	{
+		AppNotify = Stepper_StopNotify ;
+	}
+	else
+	{
+		Return_status = RT_ERROR ;
+	}
+
+	return Return_status;
+
+}

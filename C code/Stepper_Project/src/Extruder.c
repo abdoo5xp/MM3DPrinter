@@ -16,6 +16,7 @@
 #include "Extruder_cfg.h"
 
 
+typedef void (*PtrNotify)(void);
 static uint32_t Delay_ns ;
 
 /* Public Function:  Extruder_SetFeedRate														      *
@@ -44,15 +45,10 @@ void Extruder_SetFeedRate(uint32_t StepperId,uint32_t Extruder_FeedRate)
 	trace_printf("FREQUENCY_PERIOD_TICKS = %d\n",StepperFrequencyPeriodTicks);
 	Stepper_SetSpeed(StepperId,StepperFrequencyPeriodTicks);
 
-	//trace_printf("%d\n",Delay_ns);
 /*desired time = Num_timer_ticks * Time_of_one_tick */
 
 }
-/*
- * 134 mm  -->
- *
- *
- * */
+
 
 /* Public Function:  Extruder_SetFeedRate														      *
  * Description: This function is used to Set Material output from Extruder
@@ -77,4 +73,32 @@ void Extruder_SetMaterialLength(uint32_t StepperId, uint32_t Extruder_MaterialLe
 
 	Stepper_StepsTime(StepperId,TimerBasePeriodTicks);
 
+}
+
+
+
+/* Public Function:  Extruder_SetCallBackFunction														      *
+ * Description: This function is used to Configure Pin Status (HIGH ,LOW)
+ *
+ * Input parameters:
+ *      - MterialEndNotify		in range : Pointer To Function
+ *
+ * Return:
+ * 		- Status (uint8_t)
+ *         RT_SUCCESS
+ *         RT_PARAM
+ *         RT_ERROR
+ *         RT_TIME_OUT
+ *
+ * Input/Output Parameter:
+ * 		- Not Applicable
+
+ ***************************************************************************************************/
+RT_Debug Extruder_SetCallBackFunction(PtrNotify MterialEndNotify)
+{
+	RT_Debug Return_Status = RT_SUCCESS ;
+
+	Return_Status = Stepper_SetCallBack(MterialEndNotify);
+
+	return Return_Status ;
 }
