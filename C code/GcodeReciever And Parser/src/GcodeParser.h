@@ -47,6 +47,6 @@ void GcodeParser_enuStartParsing(uint8_t *GcodeArray,uint32_t NumberOfBytes);
  * Input/Output Parameters:
  * 					-Not Applicable (void)
  * ***************************************************************************************************************/
-Status_e GcodeParser_enuParseGcode();
+void GcodeParser_enuParseGcode();
 
 #endif /* GCODEPARSER_H_ */
