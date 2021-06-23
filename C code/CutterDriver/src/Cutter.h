@@ -18,11 +18,11 @@
 
 
 extern Status_e Cutter_enuInit (void);
-extern Status_e Cutter_enuperformCut  (void);
+extern Status_e Cutter_enuperformCut(void);
 
 //extern Status_e Cutter_enuChangeAngle(Cutter_Angles_e Cutter_Angle);
-//extern Status_e Cutter_enuTurnOn  (void);
-//extern Status_e Cutter_enuTurnOff (void);
+extern Status_e Cutter_enuTurnOn  (void);
+extern Status_e Cutter_enuTurnOff (void);
 
 
 #endif /* CUTTER_H_ */
