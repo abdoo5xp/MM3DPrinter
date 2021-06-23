@@ -1,3 +1,5 @@
+from PySide2.QtCore import Slot
+
 import SerialConn as SC
 import serial
 from tkinter import messagebox
@@ -22,7 +24,6 @@ Sendtask = 0
 PRECISION = 1000
 
 def send(SlicerGcodePath, ComPort):
-    print('Here')
     global serialPort, Sendtask,SlicerGcodeFile
     if CheckGcodeFileSize(SlicerGcodePath):
         SlicerGcodeFile = files.openFile(SlicerGcodePath, 'r')
@@ -32,7 +33,7 @@ def send(SlicerGcodePath, ComPort):
                     Sendtask = 1
                     sendprocess = threading.Thread(target=sendHandler)
                     sendprocess.setDaemon(True)
-                    serialPort = serial.Serial(ComPort, 9600, timeout=1)
+                    serialPort = serial.Serial(ComPort, 9600, timeout=10)
                     sendprocess.start()
                 else:
                     messagebox.showerror("Sending Error", "Wait till this Transmission is complete \n")
@@ -50,19 +51,26 @@ def sendNumberOfBytes():
     for line in SlicerGcodeFile:
         if line != "\n":
             line_count += 1
+    print("Number of lines = ", line_count )
+    print("Number of Bytes = ", line_count * 4)
+    line_count *= 4
     '''Sending the Lines Count in the first two bytes '''
     serialPort.write(line_count.to_bytes(2, "little"))
 
 
-def sendData():
-    global SlicerGcodeFile, serialPort
 
+def sendData():
+    global serialPort
+    SlicerGcodeFile.seek(0)
+    bytescounter = 0
     for line in SlicerGcodeFile:
+        print(line)
         match = re.search(r'(\w)(\d+\.?\d+)', line)
         if match:
-            '''Send the ASCII of the Character -> X or Y or Z or E or F '''
-            serialPort.write(match.group(1))
 
+            '''Send the ASCII of the Character -> X or Y or Z or E or F '''
+            serialPort.write(bytes(match.group(1), 'ascii'))
+            bytescounter += len(bytes(match.group(1), 'ascii'))
             '''Convert the Floating point number with the required precision
                Then Convert it to int then to bytes then send it '''
             ExtrusionLengthString = match.group(2)
@@ -74,10 +82,12 @@ def sendData():
                      the upcoming bytes till you form your number (find another character) 
             '''
 
+            '''to get your number on STM you have to shift left the upcoming bytes you are sending row data not ascii man '''
             ExtrusionLengthBytes = int(ExtrusionLengthNumber).to_bytes(3, "little")
-
+            print(ExtrusionLengthBytes)
+            bytescounter += len(ExtrusionLengthBytes)
             serialPort.write(ExtrusionLengthBytes)
-
+    print("bytescounter = ",bytescounter)
 def sendHandler():
     global serialPort, Sendtask
 
