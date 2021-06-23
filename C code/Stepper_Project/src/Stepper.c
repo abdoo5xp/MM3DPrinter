@@ -22,10 +22,8 @@
 #include <stm32f4xx_hal.h>
 #include <stm32f4xx_hal_conf.h>
 #include <stm32f4xx_hal_tim.h>
-#include "SW_Timer.h"
 #include "Gpio_int.h"
 #include "Rcc_int.h"
-#include "Systick.h"
 #include "Stepper.h"
 #include "Stepper_cfg.h"
 #include "Stepper_types.h"

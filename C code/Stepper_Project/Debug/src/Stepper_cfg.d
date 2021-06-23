@@ -71,9 +71,9 @@ src/Stepper_cfg.o: ../src/Stepper_cfg.c \
  ../system/include/stm32f4-hal/stm32f4xx_hal_spdifrx.h \
  ../system/include/stm32f4-hal/stm32f4xx_hal_dfsdm.h \
  ../system/include/stm32f4-hal/stm32f4xx_hal_lptim.h \
- ../src/../../../lib/src/RT_Debug.h ../src/../../../lib/src/Bits.h \
- ../src/Gpio_int.h ../src/Stepper.h ../src/Stepper_cfg.h \
- ../src/Stepper_types.h
+ ../system/include/../../../lib/src/RT_Debug.h \
+ ../system/include/../../../lib/src/Bits.h ../src/Gpio_int.h \
+ ../src/Stepper.h ../src/Stepper_cfg.h ../src/Stepper_types.h
 
 ../system/include/stm32f4-hal/stm32f4xx_hal.h:
 
@@ -221,9 +221,9 @@ src/Stepper_cfg.o: ../src/Stepper_cfg.c \
 
 ../system/include/stm32f4-hal/stm32f4xx_hal_lptim.h:
 
-../src/../../../lib/src/RT_Debug.h:
+../system/include/../../../lib/src/RT_Debug.h:
 
-../src/../../../lib/src/Bits.h:
+../system/include/../../../lib/src/Bits.h:
 
 ../src/Gpio_int.h:
 

@@ -1,6 +1,7 @@
 src/Stepper.o: ../src/Stepper.c ../system/include/diag/Trace.h \
- ../src/../../../lib/src/Bits.h ../src/../../lib/Bit_Mask.h \
- ../src/../../../lib/src/Bit_Math.h ../src/../../../lib/src/RT_Debug.h \
+ ../system/include/../../../lib/src/Bits.h ../src/../../lib/Bit_Mask.h \
+ ../system/include/../../../lib/src/Bit_Math.h \
+ ../system/include/../../../lib/src/RT_Debug.h \
  ../system/include/stm32f4-hal/stm32f4xx_hal.h \
  ../include/stm32f4xx_hal_conf.h \
  ../system/include/stm32f4-hal/stm32f4xx_hal_rcc.h \
@@ -72,20 +73,19 @@ src/Stepper.o: ../src/Stepper.c ../system/include/diag/Trace.h \
  ../system/include/stm32f4-hal/stm32f4xx_hal_fmpi2c.h \
  ../system/include/stm32f4-hal/stm32f4xx_hal_spdifrx.h \
  ../system/include/stm32f4-hal/stm32f4xx_hal_dfsdm.h \
- ../system/include/stm32f4-hal/stm32f4xx_hal_lptim.h ../src/SW_Timer.h \
- ../src/SW_Timer_types.h ../src/Gpio_int.h ../src/Rcc_int.h \
- ../src/Systick.h ../src/Stepper.h ../src/Stepper_cfg.h \
+ ../system/include/stm32f4-hal/stm32f4xx_hal_lptim.h ../src/Gpio_int.h \
+ ../src/Rcc_int.h ../src/Stepper.h ../src/Stepper_cfg.h \
  ../src/Stepper_types.h
 
 ../system/include/diag/Trace.h:
 
-../src/../../../lib/src/Bits.h:
+../system/include/../../../lib/src/Bits.h:
 
 ../src/../../lib/Bit_Mask.h:
 
-../src/../../../lib/src/Bit_Math.h:
+../system/include/../../../lib/src/Bit_Math.h:
 
-../src/../../../lib/src/RT_Debug.h:
+../system/include/../../../lib/src/RT_Debug.h:
 
 ../system/include/stm32f4-hal/stm32f4xx_hal.h:
 
@@ -233,15 +233,9 @@ src/Stepper.o: ../src/Stepper.c ../system/include/diag/Trace.h \
 
 ../system/include/stm32f4-hal/stm32f4xx_hal_lptim.h:
 
-../src/SW_Timer.h:
-
-../src/SW_Timer_types.h:
-
 ../src/Gpio_int.h:
 
 ../src/Rcc_int.h:
-
-../src/Systick.h:
 
 ../src/Stepper.h:
 

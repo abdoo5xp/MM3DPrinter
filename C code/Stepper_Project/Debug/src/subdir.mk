@@ -7,11 +7,8 @@ C_SRCS += \
 ../src/Extruder.c \
 ../src/Gpio.c \
 ../src/Rcc.c \
-../src/SW_Timer.c \
 ../src/Stepper.c \
 ../src/Stepper_cfg.c \
-../src/Systick.c \
-../src/Systick_cfg.c \
 ../src/_initialize_hardware.c \
 ../src/_write.c \
 ../src/main.c \
@@ -22,11 +19,8 @@ OBJS += \
 ./src/Extruder.o \
 ./src/Gpio.o \
 ./src/Rcc.o \
-./src/SW_Timer.o \
 ./src/Stepper.o \
 ./src/Stepper_cfg.o \
-./src/Systick.o \
-./src/Systick_cfg.o \
 ./src/_initialize_hardware.o \
 ./src/_write.o \
 ./src/main.o \
@@ -37,11 +31,8 @@ C_DEPS += \
 ./src/Extruder.d \
 ./src/Gpio.d \
 ./src/Rcc.d \
-./src/SW_Timer.d \
 ./src/Stepper.d \
 ./src/Stepper_cfg.d \
-./src/Systick.d \
-./src/Systick_cfg.d \
 ./src/_initialize_hardware.d \
 ./src/_write.d \
 ./src/main.d \
