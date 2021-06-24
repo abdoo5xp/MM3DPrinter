@@ -57,7 +57,7 @@ uint8_t Stepper_Init(void);
  * Input/Output Parameter:
  * 		- Not Applicable
  **********************************************************************************************/
-RT_Debug Stepper_StepsTime(uint32_t StepperId ,uint32_t Copy_TimerBasePeriodTicks, StepperCallBack_enu Copy_StepperCallBack);
+RT_Debug Stepper_StepsTime(uint32_t StepperId ,uint32_t Copy_TimerBasePeriodTicks);
 /* Public Function:  Stepper_SetSpeed															   *
  * Description: This function is used to Set Speed of Stepper
  *  * Input parameters:
@@ -70,6 +70,8 @@ RT_Debug Stepper_StepsTime(uint32_t StepperId ,uint32_t Copy_TimerBasePeriodTick
  * 		- Not Applicable
  **********************************************************************************************/
 RT_Debug Stepper_SetSpeed(uint32_t StepperId, uint32_t Stepper_Speed);
+
+
 /* Public Function:  Stepper_SetDirection															   *
  * Description: This function is used to Set Direction of Stepper
  *  * Input parameters:
@@ -81,12 +83,13 @@ RT_Debug Stepper_SetSpeed(uint32_t StepperId, uint32_t Stepper_Speed);
  * Input/Output Parameter:
  * 		- Not Applicable
  **********************************************************************************************/
-void Stepper_SetDirection(uint32_t Copy_StepperId,uint32_t Stepper_Direction);
+RT_Debug Stepper_SetDirection(uint32_t Copy_StepperId,uint32_t Stepper_Direction);
 
-/* Public Function:  Stepper_SetStatus															   *
- * Description: This function is used to Enable/Disable of Stepper
+
+/* Public Function:  Stepper_SetALLDirection															   *
+ * Description: This function is used to Set Direction of Stepper
  *  * Input parameters:
- * 		- Stepper_Direction		in range :{- STEPPER_ENABLE	-STEPPER_DISABLE}
+ * 		- Stepper_Direction		in range :{- STEPPER_DIR_CW		-STEPPER_DIR_CCW}
  *
  * Return:
  * 		- void
@@ -94,7 +97,38 @@ void Stepper_SetDirection(uint32_t Copy_StepperId,uint32_t Stepper_Direction);
  * Input/Output Parameter:
  * 		- Not Applicable
  **********************************************************************************************/
-void Stepper_SetStatus(uint32_t Copy_StepperId,uint32_t Stepper_Status);
+RT_Debug Stepper_SetALLDirection(uint32_t Stepper_Direction);
+
+
+
+/* Public Function:  Stepper_SetStatus															   *
+ * Description: This function is used to Enable/Disable of Stepper
+ *  * Input parameters:
+ * 		- Stepper_Status		in range :{- STEPPER_ENABLE	-STEPPER_DISABLE}
+ *
+ * Return:
+ * 		- void
+ *
+ * Input/Output Parameter:
+ * 		- Not Applicable
+ **********************************************************************************************/
+RT_Debug Stepper_SetStatus(uint32_t Copy_StepperId,uint32_t Stepper_Status);
+
+
+/* Public Function:  Stepper_SetAllStatus															   *
+ * Description: This function is used to Enable/Disable ALL Stepper
+ *  * Input parameters:
+ * 		- Stepper_Status		in range :{- STEPPER_ENABLE	-STEPPER_DISABLE}
+ *
+ * Return:
+ * 		- void
+ *
+ * Input/Output Parameter:
+ * 		- Not Applicable
+ **********************************************************************************************/
+RT_Debug Stepper_SetAllStatus(uint32_t Stepper_Status);
+
+
 
 
 /* Public Function:  Stepper_SetCallBack														      *
@@ -156,8 +190,6 @@ extern RT_Debug Stepper_Pause(uint32_t Copy_StepperId);
  ***************************************************************************************************/
 extern RT_Debug Stepper_Continue(uint32_t Copy_StepperId);
 
-
-uint8_t Stepper_Hold(void);
 
 
 #endif /* STEPPER_H_ */

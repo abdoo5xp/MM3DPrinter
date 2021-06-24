@@ -20,6 +20,109 @@
 typedef void (*PtrNotify)(void);
 static uint32_t Delay_ns ;
 
+
+/* Public Function: Extruder_Init															      *
+ * Description: This function is used to Configure Pins that connected to Stepper_Driver
+ * Input parameters:
+ *
+ * Return:
+ * 		- Status (uint8_t)
+ *         RT_SUCCESS
+ *         RT_PARAM
+ *         RT_ERROR
+ *         RT_TIME_OUT
+ *
+ * Input/Output Parameter:
+ * 		- Not Applicable
+ **********************************************************************************************/
+void Extruder_Init(void)
+{
+	Stepper_Init();
+}
+
+/* Public Function:  Extruder_SetDirection															   *
+ * Description: This function is used to Set Direction of Extruder
+ *  * Input parameters:
+ * 		- Extruder_Direction		in range :{- STEPPER_DIR_CW		-STEPPER_DIR_CCW}
+ *
+ * Return:
+ * 		- void
+ *
+ * Input/Output Parameter:
+ * 		- Not Applicable
+ **********************************************************************************************/
+RT_Debug Extruder_SetDirection(uint32_t Copy_ExtruderId,uint32_t Extruder_Direction)
+{
+	RT_Debug Return_Status ;
+
+	Return_Status = Stepper_SetDirection(Copy_ExtruderId,Extruder_Direction);
+
+	return Return_Status ;
+}
+
+
+/* Public Function:  Extruder_SetALLDirection															   *
+ * Description: This function is used to Set Direction of Extruder
+ *  * Input parameters:
+ * 		- Extruder_Direction		in range :{- STEPPER_DIR_CW		-STEPPER_DIR_CCW}
+ *
+ * Return:
+ * 		- void
+ *
+ * Input/Output Parameter:
+ * 		- Not Applicable
+ **********************************************************************************************/
+RT_Debug Extruder_SetALLDirection(uint32_t Extruder_Direction)
+{
+	RT_Debug Return_Status ;
+
+	Return_Status = Stepper_SetALLDirection(Extruder_Direction);
+
+	return Return_Status ;
+}
+
+
+
+/* Public Function:  Extruder_SetStatus															   *
+ * Description: This function is used to Enable/Disable of Extruder
+ *  * Input parameters:
+ * 		- Extruder_Status		in range :{- STEPPER_ENABLE	-STEPPER_DISABLE}
+ *
+ * Return:
+ * 		- void
+ *
+ * Input/Output Parameter:
+ * 		- Not Applicable
+ **********************************************************************************************/
+RT_Debug Extruder_SetStatus(uint32_t Copy_ExtruderId,uint32_t Extruder_Status)
+{
+	RT_Debug Return_Status ;
+
+	Return_Status = Stepper_SetDirection(Copy_ExtruderId,Extruder_Status);
+
+	return Return_Status ;
+}
+
+/* Public Function:  Extruder_SetAllStatus															   *
+ * Description: This function is used to Enable/Disable ALL Extruder
+ *  * Input parameters:
+ * 		- Extruder_Status		in range :{- STEPPER_ENABLE	-STEPPER_DISABLE}
+ *
+ * Return:
+ * 		- void
+ *
+ * Input/Output Parameter:
+ * 		- Not Applicable
+ **********************************************************************************************/
+RT_Debug Extruder_SetAllStatus(uint32_t Extruder_Status)
+{
+	RT_Debug Return_Status ;
+
+	Return_Status = Stepper_SetAllStatus(Extruder_Status);
+
+	return Return_Status ;
+}
+
 /* Public Function:  Extruder_SetFeedRate														      *
  * Description: This function is used to Set FeedRate of Extruder
  *
@@ -63,7 +166,7 @@ void Extruder_SetFeedRate(uint32_t StepperId,uint32_t Extruder_FeedRate)
  * Input/Output Parameter:
  * 		- Not Applicable
  ***************************************************************************************************/
-void Extruder_SetMaterialLength(uint32_t StepperId, uint32_t Extruder_MaterialLength_um , StepperCallBack_enu ExtruderCallBack)
+void Extruder_SetMaterialLength(uint32_t StepperId, uint32_t Extruder_MaterialLength_um)
 {
 	trace_printf("Extruder_MaterialLength_um = %d\n",Extruder_MaterialLength_um);
 	uint64_t Steps = (uint64_t)(Extruder_MaterialLength_um * STEPPER_STEP_PER_REVOLUTION / EXTRUDER_LENGTH_um_PER_REVOLUTION) ;
@@ -71,7 +174,7 @@ void Extruder_SetMaterialLength(uint32_t StepperId, uint32_t Extruder_MaterialLe
 	StepperTimerBasePeriodTicks = (Delay_ns * 2 * Steps * 84) / (1000 * STEPPER_TIMER_BASE_PRESCALER) ;
 	trace_printf("TimerBasePeriodTicks = %x\n",StepperTimerBasePeriodTicks);
 
-	Stepper_StepsTime(StepperId,StepperTimerBasePeriodTicks-20,ExtruderCallBack);
+	Stepper_StepsTime(StepperId,StepperTimerBasePeriodTicks-20);
 
 }
 

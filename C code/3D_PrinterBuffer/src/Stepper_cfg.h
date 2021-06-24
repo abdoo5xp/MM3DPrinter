@@ -28,7 +28,7 @@
 /************************************Steps Per Revolution*************************************************/
 #define 	STEPPER_STEP_PER_REVOLUTION		6400
 
-/*THE APB1 BUS CLOCK IS 84 MHZ */
+/*THE APB1 BUS CLOCK IS 42 MHZ */
 #define 	STEPPER_TIMER_PWM_PRESCALER 	0
 
 #define 	STEPPER_TIMER_PWM_FREQ_Mhz		84

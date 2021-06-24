@@ -174,7 +174,6 @@ extern RT_Debug Stepper_Pause(uint32_t Copy_StepperId)
  **********************************************************************************************/
 uint8_t Stepper_Init(){
 
-
 	uint32_t Stepper_Gpio_Idx ;
 	uint32_t Stepper_Timer_Idx ;
 
@@ -214,12 +213,11 @@ uint8_t Stepper_Init(){
  * Input/Output Parameter:
  * 		- Not Applicable
  **********************************************************************************************/
-RT_Debug Stepper_StepsTime(uint32_t StepperId ,uint32_t Copy_TimerBasePeriodTicks, StepperCallBack_enu Copy_StepperCallBack){
+RT_Debug Stepper_StepsTime(uint32_t StepperId ,uint32_t Copy_TimerBasePeriodTicks){
 
 	RT_Debug Return_status = RT_SUCCESS ;
 
 	Stepper_Id = StepperId ;
-	Stepper_CallBack = Copy_StepperCallBack ;
 
 	/* 84,000,000 / desired frequency */
 	trace_printf("Copy_TimerBasePeriodTicks = %d\n",Copy_TimerBasePeriodTicks);
@@ -283,11 +281,51 @@ RT_Debug Stepper_SetSpeed(uint32_t StepperId,uint32_t Stepper_Speed){
  * Input/Output Parameter:
  * 		- Not Applicable
  **********************************************************************************************/
-void Stepper_SetDirection(uint32_t Copy_StepperId,uint32_t Stepper_Direction){
+RT_Debug Stepper_SetDirection(uint32_t Copy_StepperId,uint32_t Stepper_Direction){
 
+	RT_Debug Return_Status = RT_SUCCESS ;
+
+	if (Copy_StepperId < STEPPER_NUM && (Stepper_Direction == STEPPER_DIR_CW || Stepper_Direction == STEPPER_DIR_CCW ))
+	{
 	Gpio_WritePin(Steppercfg[Copy_StepperId].Stepper_Pin[STEPPER_DIR_PIN].Gpio_Port,Steppercfg[Copy_StepperId].Stepper_Pin[STEPPER_DIR_PIN].Gpio_PinNum,Stepper_Direction);
-
+	}
+	else
+	{
+		Return_Status = RT_PARAM ;
+	}
+	return Return_Status ;
 }
+
+
+/* Public Function:  Stepper_SetALLDirection															   *
+ * Description: This function is used to Set Direction of Stepper
+ *  * Input parameters:
+ * 		- Stepper_Direction		in range :{- STEPPER_DIR_CW		-STEPPER_DIR_CCW}
+ *
+ * Return:
+ * 		- void
+ *
+ * Input/Output Parameter:
+ * 		- Not Applicable
+ **********************************************************************************************/
+RT_Debug Stepper_SetALLDirection(uint32_t Stepper_Direction)
+{
+	RT_Debug Return_Status = RT_SUCCESS ;
+
+	if (Stepper_Direction == STEPPER_DIR_CW || Stepper_Direction == STEPPER_DIR_CCW )
+	{
+		for (uint32_t StepperIdx = 0 ; StepperIdx < STEPPER_NUM ; StepperIdx++)
+		{
+			Gpio_WritePin(Steppercfg[StepperIdx].Stepper_Pin[STEPPER_DIR_PIN].Gpio_Port,Steppercfg[StepperIdx].Stepper_Pin[STEPPER_DIR_PIN].Gpio_PinNum,Stepper_Direction);
+		}
+	}
+	else
+	{
+		Return_Status = RT_PARAM ;
+	}
+	return Return_Status ;
+}
+
 
 /* Public Function:  Stepper_SetStatus															   *
  * Description: This function is used to Enable/Disable of Stepper
@@ -300,11 +338,53 @@ void Stepper_SetDirection(uint32_t Copy_StepperId,uint32_t Stepper_Direction){
  * Input/Output Parameter:
  * 		- Not Applicable
  **********************************************************************************************/
-void Stepper_SetStatus(uint32_t Copy_StepperId,uint32_t Stepper_Status){
+RT_Debug Stepper_SetStatus(uint32_t Copy_StepperId,uint32_t Stepper_Status){
 
+	RT_Debug Return_Status = RT_SUCCESS ;;
+
+	if (Copy_StepperId < STEPPER_NUM && (Stepper_Status == STEPPER_ENABLE || Stepper_Status == STEPPER_DISABLE))
+	{
 	Gpio_WritePin(Steppercfg[Copy_StepperId].Stepper_Pin[STEPPER_ENABLE_PIN].Gpio_Port,Steppercfg[Copy_StepperId].Stepper_Pin[STEPPER_ENABLE_PIN].Gpio_PinNum,Stepper_Status);
+	}
+	else
+	{
+		Return_Status = RT_PARAM ;
+	}
+	return Return_Status ;
+}
+
+
+/* Public Function:  Stepper_SetAllStatus															   *
+ * Description: This function is used to Enable/Disable ALL Stepper
+ *  * Input parameters:
+ * 		- Stepper_Status		in range :{- STEPPER_ENABLE	-STEPPER_DISABLE}
+ *
+ * Return:
+ * 		- void
+ *
+ * Input/Output Parameter:
+ * 		- Not Applicable
+ **********************************************************************************************/
+RT_Debug Stepper_SetAllStatus(uint32_t Stepper_Status)
+{
+	RT_Debug Return_Status = RT_SUCCESS ;
+
+	if (Stepper_Status == STEPPER_ENABLE || Stepper_Status == STEPPER_DISABLE )
+	{
+		for (uint32_t StepperIdx = 0 ; StepperIdx < STEPPER_NUM ; StepperIdx++)
+		{
+		Gpio_WritePin(Steppercfg[StepperIdx].Stepper_Pin[STEPPER_ENABLE_PIN].Gpio_Port,Steppercfg[StepperIdx].Stepper_Pin[STEPPER_ENABLE_PIN].Gpio_PinNum,Stepper_Status);
+		}
+	}
+	else
+	{
+		Return_Status = RT_PARAM ;
+	}
+	return Return_Status ;
 
 }
+
+
 
 /***********************************************Timer Base Interrupt*******************************************************/
 void TIM8_BRK_TIM12_IRQHandler()
@@ -364,11 +444,4 @@ RT_Debug Stepper_SetCallBack(PtrNotify Stepper_StopNotify)
 
 	return Return_status;
 
-}
-
-/******************************************Disable ALL*************************************************/
-uint8_t Stepper_Hold(void)
-{
-	while ((TimerBaseConfigs.Instance->SR & TIM_FLAG_UPDATE) != TIM_FLAG_UPDATE);
-	return 0;
 }

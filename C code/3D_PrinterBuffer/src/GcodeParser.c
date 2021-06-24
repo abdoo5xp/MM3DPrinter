@@ -82,15 +82,14 @@ static void GcodeParser_vidMaterialSwap(uint8_t OldMaterial, uint8_t CurrentMate
 	/*Reverse the old material with the reverse speed */
 	Stepper_SetDirection(OldMaterial,STEPPER_DIR_CCW);
 	Extruder_SetFeedRate(OldMaterial, GCODEPARSER_REVERSE_FEEDRATE);
-	Extruder_SetMaterialLength(OldMaterial, GCODEPARSER_MATERIAL_OFFSET_um,Stepper_CallBack_Off);
+	Extruder_SetMaterialLength(OldMaterial, GCODEPARSER_MATERIAL_OFFSET_um);
 	Stepper_SetDirection(OldMaterial,STEPPER_DIR_CW);
 
 	/**********************************Wait till Retraction******************************************/
-	Stepper_Hold();
 
 	/*Run the new material */
 	Extruder_SetFeedRate(CurrentMaterial, FeedRate);
-	Extruder_SetMaterialLength(CurrentMaterial, GCODEPARSER_MATERIAL_OFFSET_um + MaterialLength,Stepper_CallBack_On);
+	Extruder_SetMaterialLength(CurrentMaterial, GCODEPARSER_MATERIAL_OFFSET_um + MaterialLength);
 
 	/*Wait till it reaches to the heater */
 	/*do
@@ -250,7 +249,7 @@ void GcodeParser_enuParseGcode()
 		else
 		{
 			/* Call the Set Material to run the Material Extruder and the main extruder   */
-			Extruder_SetMaterialLength(GcodeDataArray[ByteIdx] - 'X', MaterialLength,Stepper_CallBack_On);
+			Extruder_SetMaterialLength(GcodeDataArray[ByteIdx] - 'X', MaterialLength);
 		}
 		//Extruder_SetMaterialLength(EXTRUDER_E, MaterialLength);
 

@@ -9,10 +9,21 @@
 #include "../../../lib/src/Bits.h"
 #include "../../lib/Error_codes.h"
 #include "../../../lib/src/RT_Debug.h"
-#include "Stepper.h"
 #include "Extruder.h"
 #include "GcodeParser.h"
 #include "GcodeReceiver.h"
+
+
+typedef enum
+{
+	stage_1 ,
+	stage_2 ,
+	stage_3 ,
+	stage_4
+}Stepper_Stage_enu;
+
+
+Stepper_Stage_enu Stepper_Stage = stage_1 ;
 
 void dataReceivedCallback(void)
 {
@@ -23,39 +34,69 @@ void dataReceivedCallback(void)
 	trace_printf("The End elhamdullah \n");
 }
 
+void Stepper_Test(void)
+{
+	Extruder_SetStatus(EXTRUDER_M_1,EXTRUDER_ENABLE);
+	Extruder_SetDirection(EXTRUDER_M_1,EXTRUDER_DIR_CW);
+
+	/*****************************************Least FeedRate = 500*********************************************************************/
+	Extruder_SetFeedRate(EXTRUDER_M_1,6000);
+	Extruder_SetMaterialLength(EXTRUDER_M_1,268000);
+}
+
+void Stepper_PauseContinue_Test(void)
+{
+	do
+	{
+		trace_printf("Delay\n");
+		trace_printf("Delay\n");
+		trace_printf("Delay\n");
+		trace_printf("Delay\n");
+
+		uint32_t Return_Status = Extruder_Pause(EXTRUDER_M_1) ;
+		trace_printf("Stepper_Stop= %d\n",Return_Status);
+
+		trace_printf("Delay\n");
+		trace_printf("Delay\n");
+		trace_printf("Delay\n");
+		trace_printf("Delay\n");
+
+		Return_Status = Extruder_Continue(EXTRUDER_M_1) ;
+		trace_printf("Stepper_Continue= %d\n",Return_Status);
+	}while(0);
+}
+
+void Stepper_StateMachine()
+{
+	switch(Stepper_Stage)
+	{
+	case stage_1 :
+		Stepper_Stage = stage_2 ;
+
+		Extruder_SetFeedRate(EXTRUDER_M_1,6000);
+		Extruder_SetMaterialLength(EXTRUDER_M_1,268000);
+
+		break;
+	case stage_2 :
+
+		break;
+	case stage_3 :
+
+		break;
+	case stage_4 :
+
+		break;
+	}
+}
+
 int main(void)
 {
-	Stepper_Init();
-	GcodeReceiver_vidInit(dataReceivedCallback);
+	Extruder_Init();
+	//GcodeReceiver_vidInit(dataReceivedCallback);
 
-//	Stepper_SetStatus(STEPPER_1,STEPPER_ENABLE);
-//	Stepper_SetDirection(STEPPER_1,STEPPER_DIR_CW);
-//
-//	/*****************************************Least FeedRate = 500*********************************************************************/
-//	Extruder_SetFeedRate(EXTRUDER_M_1,6000);
-//	Extruder_SetMaterialLength(EXTRUDER_M_1,268000);
+	Extruder_SetAllStatus(EXTRUDER_ENABLE);
+	Extruder_SetALLDirection(EXTRUDER_DIR_CW);
 
-	/*Extruder_SetFeedRate(STEPPER_2,4000);
-	Extruder_SetMaterialLength(STEPPER_2,67000);*/
-
-	/*do
-	{
-	trace_printf("Delay\n");
-	trace_printf("Delay\n");
-	trace_printf("Delay\n");
-	trace_printf("Delay\n");
-
-	uint32_t Return_Status = Stepper_Pause(STEPPER_1) ;
-	trace_printf("Stepper_Stop= %d\n",Return_Status);
-
-	trace_printf("Delay\n");
-	trace_printf("Delay\n");
-	trace_printf("Delay\n");
-	trace_printf("Delay\n");
-
-	Return_Status = Stepper_Continue(STEPPER_1) ;
-	trace_printf("Stepper_Continue= %d\n",Return_Status);
-	}while(0);*/
 
 	while(1){
 
