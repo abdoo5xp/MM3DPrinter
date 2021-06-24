@@ -17,5 +17,8 @@
 #define EXTRUDER_M_3 						2
 #define EXTRUDER_E	 						3
 
+/*************************************Extruder Num*********************************************************/
+#define EXTRUDER_NUM						3
+
 
 #endif /* EXTRUDER_CFG_H_ */

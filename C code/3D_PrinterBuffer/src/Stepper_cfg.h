@@ -23,7 +23,7 @@
 #define 	STEPPER_PINS_NUM				3
 
 /************************************Steppers_Num*********************************************************/
-#define 	STEPPER_NUM						2
+#define 	STEPPER_NUM						3
 
 /************************************Steps Per Revolution*************************************************/
 #define 	STEPPER_STEP_PER_REVOLUTION		6400

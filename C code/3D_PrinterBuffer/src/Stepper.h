@@ -10,16 +10,20 @@
 
 #include "Stepper_cfg.h"
 
-typedef enum {
-	Stepper_CallBack_On 		,
-	Stepper_CallBack_Off
-}StepperCallBack_enu;
+typedef enum
+{
+	Stepper_NotWorking ,
+	Stepper_Working
+}StepperWorking_enu;
 
 typedef void (*PtrNotify)(void);
 
 extern uint32_t StepperFrequencyPeriodTicks ;
 
 extern uint32_t StepperTimerBasePeriodTicks ;//12000//6563
+
+extern uint32_t StepperWorking_Id[STEPPER_NUM];
+
 
 // Stepper_Status**********************************************************************************
 #define STEPPER_ENABLE				1
@@ -57,7 +61,10 @@ uint8_t Stepper_Init(void);
  * Input/Output Parameter:
  * 		- Not Applicable
  **********************************************************************************************/
-RT_Debug Stepper_StepsTime(uint32_t StepperId ,uint32_t Copy_TimerBasePeriodTicks);
+RT_Debug Stepper_StepsTime(uint32_t StepperId ,uint32_t Copy_TimerBasePeriodTicks,StepperWorking_enu Stepper_Status);
+
+
+
 /* Public Function:  Stepper_SetSpeed															   *
  * Description: This function is used to Set Speed of Stepper
  *  * Input parameters:

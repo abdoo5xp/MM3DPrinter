@@ -42,6 +42,8 @@
  * PB8 -> TIM4_CH3
  * PB9 -> TIM4_CH4
  ***************************************************************************************************/
+
+/***************************************************Steppers Must Have Extruder and its The last one (Idx)***************************************************/
 Steppercfg_t Steppercfg[STEPPER_NUM] = {
 
 		[STEPPER_1]	=
@@ -105,6 +107,37 @@ Steppercfg_t Steppercfg[STEPPER_NUM] = {
 									   .Gpio_PinNum  = GPIO_PIN7						,
 									   .Gpio_AF = GPIO_AF2_TIM3_5
 									}
+								},
+		[STEPPER_3]	=
+								{
+								.Stepper_Pin[STEPPER_ENABLE_PIN] =
+									{
+									   .Gpio_Mode  	 = GPIO_MODE_OUTPUT 		    	,
+									   .Gpio_OType 	 = GPIO_OTYPE_PUSH_PULL    			,
+									   .Gpio_OSpeed  = GPIO_OSPEED_VERY_HIGH_SPEED		,
+									   .Gpio_PUPD 	 = GPIO_PUPD_PULL_UP 				,
+									   .Gpio_Port  	 = GPIOD							,
+									   .Gpio_PinNum  = GPIO_PIN13
+									},
+								.Stepper_Pin[STEPPER_DIR_PIN] =
+									{
+									   .Gpio_Mode  	 = GPIO_MODE_OUTPUT  				,
+									   .Gpio_OType 	 = GPIO_OTYPE_PUSH_PULL    			,
+									   .Gpio_OSpeed  = GPIO_OSPEED_VERY_HIGH_SPEED		,
+									   .Gpio_PUPD 	 = GPIO_PUPD_PULL_UP 				,
+									   .Gpio_Port  	 = GPIOD							,
+									   .Gpio_PinNum  = GPIO_PIN14
+									},
+								.Stepper_Pin[STEPPER_PUL_PIN] =
+									{
+									   .Gpio_Mode  	 = GPIO_MODE_AF 		    		,
+									   .Gpio_OType 	 = GPIO_OTYPE_PUSH_PULL    			,
+									   .Gpio_OSpeed  = GPIO_OSPEED_VERY_HIGH_SPEED		,
+									   .Gpio_PUPD 	 = GPIO_PUPD_FLOATING				,
+									   .Gpio_Port  	 = GPIOB							,
+									   .Gpio_PinNum  = GPIO_PIN8						,
+									   .Gpio_AF = GPIO_AF2_TIM3_5
+									}
 								}
 };
 
@@ -166,5 +199,33 @@ StepperChannelcfg_t StepperChannelcfg[STEPPER_NUM] ={
 						.OCFastMode 		= TIM_OCFAST_ENABLE
 				},
 				.StepperChannel = TIM_CHANNEL_2
+		},
+		[STEPPER_3] = {
+
+				.StepperTimerInitConfigs =
+				{
+						.Prescaler 			= STEPPER_TIMER_PWM_PRESCALER	,
+						.ClockDivision 		= TIM_CLOCKDIVISION_DIV1	,
+						.CounterMode 		= TIM_COUNTERMODE_UP		,
+						.Period 			= STEPPER_FREQUENCY_PERIOD_TICKS, 		/* 84,000,000 / desired frequency */
+						.RepetitionCounter 	= 0
+				},
+					.StepperConfigs =
+				{
+						.Channel 			= HAL_TIM_ACTIVE_CHANNEL_3	,
+						.Instance			= TIM4_BASE 				,
+						.Lock 				= HAL_UNLOCKED 				,
+						.State 				= HAL_TIM_STATE_RESET		,
+						//.Init 				= StepperChannelcfg[STEPPER_1].StepperTimerInitConfigs
+				},
+				.StepperOCInitConfigs =
+				{
+						.OCMode 			= TIM_OCMODE_PWM2						,
+						.Pulse 				= STEPPER_FREQUENCY_PERIOD_TICKS / 2	,
+						.OCPolarity 		= TIM_OCPOLARITY_LOW					,
+						.OCIdleState 		= TIM_OCIDLESTATE_RESET					,
+						.OCFastMode 		= TIM_OCFAST_ENABLE
+				},
+				.StepperChannel = TIM_CHANNEL_3
 		}
 };

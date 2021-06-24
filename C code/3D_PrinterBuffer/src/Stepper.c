@@ -49,7 +49,7 @@ PtrNotify AppNotify ;
 
 volatile uint32_t *AppNotifyFlag  = NULL ;
 
-static uint32_t Stepper_Id;
+uint32_t StepperWorking_Id[STEPPER_NUM];
 
 /************************************************Stepper Speed*************************************************************/
 uint32_t StepperFrequencyPeriodTicks  = STEPPER_FREQUENCY_PERIOD_TICKS ;
@@ -213,11 +213,17 @@ uint8_t Stepper_Init(){
  * Input/Output Parameter:
  * 		- Not Applicable
  **********************************************************************************************/
-RT_Debug Stepper_StepsTime(uint32_t StepperId ,uint32_t Copy_TimerBasePeriodTicks){
+RT_Debug Stepper_StepsTime(uint32_t StepperId ,uint32_t Copy_TimerBasePeriodTicks,StepperWorking_enu Stepper_Status){
 
 	RT_Debug Return_status = RT_SUCCESS ;
 
-	Stepper_Id = StepperId ;
+	StepperWorking_Id[StepperId] = Stepper_Working ;
+	StepperWorking_Id[STEPPER_NUM-1] = Stepper_Status ;
+	if (AppNotifyFlag)
+	{
+		*AppNotifyFlag = StepperAction_NotDone ;
+	}
+
 
 	/* 84,000,000 / desired frequency */
 	trace_printf("Copy_TimerBasePeriodTicks = %d\n",Copy_TimerBasePeriodTicks);
@@ -232,6 +238,10 @@ RT_Debug Stepper_StepsTime(uint32_t StepperId ,uint32_t Copy_TimerBasePeriodTick
 
 	/*****************PWM Start******************************************************************************************************************/
 	Return_status = HAL_TIM_PWM_Start(&StepperChannelcfg[StepperId].StepperConfigs,StepperChannelcfg[StepperId].StepperChannel);
+	if (Stepper_Status == Stepper_Working)
+	{
+		Return_status = HAL_TIM_PWM_Start(&StepperChannelcfg[STEPPER_NUM-1].StepperConfigs,StepperChannelcfg[STEPPER_NUM-1].StepperChannel);
+	}
 
 	/*****************PWM Start***********************************************/
 	//trace_printf("HAL_TIM_PWM_Start = %d\n",Return_status);
@@ -396,12 +406,15 @@ void TIM8_BRK_TIM12_IRQHandler()
 		(TimerBaseConfigs.Instance->SR) &= ~(TIM_IT_UPDATE);
 	}
 
-	//	for(uint32_t Stepper_Idx = 0  ; Stepper_Idx < STEPPER_NUM ; Stepper_Idx++)
-	//	{
-	trace_printf("PWM_Stop = %d\n",HAL_TIM_PWM_Stop(&StepperChannelcfg[Stepper_Id].StepperConfigs,StepperChannelcfg[Stepper_Id].StepperChannel));
-	//Return_status = 			   HAL_TIM_PWM_Start(&StepperChannelcfg[StepperId].StepperConfigs,StepperChannelcfg[StepperId].StepperChannel);
-	trace_printf("StepperId = %d\n",Stepper_Id);
-	//	}
+	for(uint32_t Stepper_Idx = 0  ; Stepper_Idx < STEPPER_NUM ; Stepper_Idx++)
+	{
+		if (StepperWorking_Id[Stepper_Idx] == Stepper_Working)
+		{
+			trace_printf("PWM_Stop = %d\n",HAL_TIM_PWM_Stop(&StepperChannelcfg[Stepper_Idx].StepperConfigs,StepperChannelcfg[Stepper_Idx].StepperChannel));
+			StepperWorking_Id[Stepper_Idx] = Stepper_NotWorking ;
+			trace_printf("StepperId = %d\n",Stepper_Idx);
+		}
+	}
 
 	HAL_TIM_Base_Stop_IT(&TimerBaseConfigs); //passing htim pointer to struct
 
@@ -415,7 +428,7 @@ void TIM8_BRK_TIM12_IRQHandler()
 	{
 		AppNotify();
 	}
-	*/
+	 */
 }
 
 

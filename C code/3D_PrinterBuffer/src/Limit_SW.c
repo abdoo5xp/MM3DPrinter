@@ -5,13 +5,16 @@
  *      Author: abdoo
  */
 
-
 #include <stdint.h>
-#include "../../lib/Bit_Mask.h"
+#include "../../lib/Bits.h"
 #include "../../lib/Bit_Math.h"
 #include "../../lib/Error_codes.h"
-#include "RCC.h"
-#include "EXTI.h"
+#include "../../../lib/src/RT_Debug.h"
+#include "GPIO_int.h"
+#include "Rcc_int.h"
+#include "NVIC.h"
+#include "Limit_SW_types.h"
+#include "Limit_SW.h"
 
 #define	EXTI_SYSCFG			((void*) 0x40013808)
 #define	EXTI				((void*) 0x40013C00)
@@ -20,7 +23,7 @@
 #define  EXTI_SYSCFG_MASK(val,IDX) 	(val << (IDX << 2))
 #define  EXTI_SYSCFG_NUMBER_OF_BITS (0x0F)
 
-#define NUM_OF_EXTI_CBFs		7
+#define NUM_OF_EXTI_CBFs		5
 
 typedef struct
 {
@@ -39,15 +42,33 @@ typedef struct
 
 static pfun EXTICallBacks[NUM_OF_EXTI_CBFs];
 
-void Limit_SW_vidInit()
+
+uint64_t LimitSW_Gpio[5] =
 {
-	RCC_ControlAPB2PeriClk(RCC_APB2_PREPH_SYSCFG, RCC_PREPH_ENABLE);
-	RCC_ControlAHB1PeriClk(RCC_AHB1_PREPH_GPIOA, RCC_PREPH_ENABLE);
-	GPIO_InitPin(&btn_config);
+		RCC_AHB1_PERI_CLOCK_GPIOA ,
+		RCC_AHB1_PERI_CLOCK_GPIOB,
+		RCC_AHB1_PERI_CLOCK_GPIOC,
+		RCC_AHB1_PERI_CLOCK_GPIOD,
+		RCC_AHB1_PERI_CLOCK_GPIOE
+};
+
+void LimitSW_vidInit(void)
+{
+	uint32_t LimitSW_Gpio_Idx ;
+
+	/*****************************************External Interrupt********************************************/
+	Rcc_APB2_PeriClockStatus(RCC_APB2_PERI_CLOCK_SYSCFG, RCC_PERI_CLOCK_ENABLE);
+
+	for (uint8_t Limit_Pin_Idx = 0 ; Limit_Pin_Idx < LIMIT_SW_NUM ; Limit_Pin_Idx++)
+	{
+		LimitSW_Gpio_Idx = (uint32_t)(((uint32_t)(LimitSWcfg[Limit_Pin_Idx].btn_config.Gpio_Port) - (uint32_t)0x40020000) / (uint32_t)0x400);
+		Rcc_AHB1_PeriClockStatus(LimitSW_Gpio[LimitSW_Gpio_Idx],RCC_PERI_CLOCK_ENABLE);
+		Gpio_Init(&LimitSWcfg[Limit_Pin_Idx].btn_config);
+	}
 }
 
 
-Status_e EXTI_enuEnableINT(EXTI_config_t * pinConfig)
+RT_Debug LimitSW_enuEnableINT(EXTI_config_t * pinConfig)
 {
 	if (	pinConfig == NULL 		||
 			pinConfig->EXTINum > 15 ||
@@ -62,7 +83,7 @@ Status_e EXTI_enuEnableINT(EXTI_config_t * pinConfig)
 
 	/*if it is interrupt then the base address will be the one of the interrupt
 	 * if not the base address will be incremented by 4 which will give the bas address of the EMR */
-	((volatile EXTI_t *)(EXTI + pinConfig->maskType))->EXTI_IMR = (1 << pinConfig->EXTINum);
+	((volatile EXTI_t *)(EXTI + pinConfig->maskType))->EXTI_IMR |= (1 << pinConfig->EXTINum);
 //	((volatile EXTI_t *)(EXTI))->EXTI_EMR = (1 << pinConfig->EXTINum);
 
 	if(pinConfig->EdgeDetectionType == EXTI_EDGE_RISING)
@@ -82,9 +103,9 @@ Status_e EXTI_enuEnableINT(EXTI_config_t * pinConfig)
 	return _SUCCESS;
 }
 
-Status_e EXTI_enuSetCbf(pfun cbf, uint8_t EXTINum)
+RT_Debug LimitSW_SetCallBack(pfun cbf, uint8_t EXTINum)
 {
-	if(EXTINum >= NUM_OF_EXTI_CBFs)
+	if(EXTINum >= NUM_OF_EXTI_CBFs && cbf != NULL )
 	{
 		return _ERROR;
 	}
@@ -107,27 +128,27 @@ inline static void my_EXTI_IRQHandler(uint8_t EXTINum)
 
 
 
-EXTI0_IRQHandler(void)
+void EXTI0_IRQHandler(void)
 {
 	my_EXTI_IRQHandler(0);
 }
 
-EXTI1_IRQHandler(void)
+void EXTI1_IRQHandler(void)
 {
 	my_EXTI_IRQHandler(1);
 }
 
-EXTI2_IRQHandler(void)
+void EXTI2_IRQHandler(void)
 {
 	my_EXTI_IRQHandler(2);
 }
 
-EXTI3_IRQHandler(void)
+void EXTI3_IRQHandler(void)
 {
 	my_EXTI_IRQHandler(3);
 }
 
-EXTI4_IRQHandler(void)
+void EXTI4_IRQHandler(void)
 {
 	my_EXTI_IRQHandler(4);
 }

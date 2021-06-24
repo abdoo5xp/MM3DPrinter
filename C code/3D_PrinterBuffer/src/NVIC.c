@@ -104,7 +104,10 @@ uint32_t NVIC_EnableIntr(irqn_t Nvic_Intr){
 		return RT_PARAM;
 	}
 	/*this register of you put a zero value will have no effect */
-	NVIC->iser[ Nvic_Intr/32] = (1 << Nvic_Intr%32);
+	//NVIC ->iser[Nvic_Intr/32] = 1<<(Nvic_Intr % 32);
+
+	 NVIC->iser[(((uint32_t)(int32_t)Nvic_Intr) >> 5UL)] = (uint32_t)(1UL << (((uint32_t)(int32_t)Nvic_Intr) & 0x1FUL));
+
 
 	return RT_SUCCESS;
 }

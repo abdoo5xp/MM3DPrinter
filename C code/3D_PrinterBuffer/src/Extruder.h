@@ -16,6 +16,12 @@ typedef void (*PtrNotify)(void);
 
 typedef enum
 {
+	Extruder_NotWorking ,
+	Extruder_Working
+}ExtruderrWorking_enu;
+
+typedef enum
+{
 	ExtruderAction_NotDone ,
 	ExtruderAction_Done
 }ExtruderAction_Status_enu;
@@ -131,8 +137,7 @@ void Extruder_SetFeedRate(uint32_t ExtruderId, uint32_t Extruder_FeedRate);
  * Input/Output Parameter:
  * 		- Not Applicable
  ***************************************************************************************************/
-void Extruder_SetMaterialLength(uint32_t ExtruderId, uint32_t Extruder_MaterialLength_um);
-
+void Extruder_SetMaterialLength(uint32_t StepperId, uint32_t Extruder_MaterialLength_um, ExtruderrWorking_enu Extruder_Status);
 /* Public Function:  Extruder_Pause														      *
  * Description: This function is used to Pause Extruder
  *

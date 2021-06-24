@@ -41,7 +41,6 @@ const IRcfg_t IRcfg[IR_NUM] = {
 			 	 	 	 	 	   }
 		}
 
-
 };
 
 

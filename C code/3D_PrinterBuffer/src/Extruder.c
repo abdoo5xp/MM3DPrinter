@@ -166,7 +166,7 @@ void Extruder_SetFeedRate(uint32_t StepperId,uint32_t Extruder_FeedRate)
  * Input/Output Parameter:
  * 		- Not Applicable
  ***************************************************************************************************/
-void Extruder_SetMaterialLength(uint32_t StepperId, uint32_t Extruder_MaterialLength_um)
+void Extruder_SetMaterialLength(uint32_t StepperId, uint32_t Extruder_MaterialLength_um, ExtruderrWorking_enu Extruder_Status)
 {
 	trace_printf("Extruder_MaterialLength_um = %d\n",Extruder_MaterialLength_um);
 	uint64_t Steps = (uint64_t)(Extruder_MaterialLength_um * STEPPER_STEP_PER_REVOLUTION / EXTRUDER_LENGTH_um_PER_REVOLUTION) ;
@@ -174,7 +174,7 @@ void Extruder_SetMaterialLength(uint32_t StepperId, uint32_t Extruder_MaterialLe
 	StepperTimerBasePeriodTicks = (Delay_ns * 2 * Steps * 84) / (1000 * STEPPER_TIMER_BASE_PRESCALER) ;
 	trace_printf("TimerBasePeriodTicks = %x\n",StepperTimerBasePeriodTicks);
 
-	Stepper_StepsTime(StepperId,StepperTimerBasePeriodTicks-20);
+	Stepper_StepsTime(StepperId,StepperTimerBasePeriodTicks-20,Extruder_Status);
 
 }
 
