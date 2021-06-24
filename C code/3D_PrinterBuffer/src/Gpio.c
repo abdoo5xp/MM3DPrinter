@@ -155,7 +155,7 @@ uint8_t Gpio_Init(const Pincfg_t* Pincfg){
 			}
 
 			if (Mode == GPIO_MODE_AF){
-				if (AF <= GPIO_AF15){
+				if (AF <= GPIO_AF15_EVENTOUT){
 
 					Local_Reg			  = Port -> AFR[Pin >> 3] ;
 					Local_Reg 			  &= ~(GPIO_AF_CLR << ((Pin << 2) % 32)) ;
@@ -376,7 +376,7 @@ uint8_t Gpio_Select_AF(void *Gpio_Port , uint32_t Gpio_PinNum , uint32_t Gpio_AF
 
 	if (Gpio_PinNum <= GPIO_PIN15 && (Gpio_Port == GPIOA || Gpio_Port == GPIOB
 					|| Gpio_Port == GPIOC || Gpio_Port == GPIOD
-					|| Gpio_Port == GPIOE || Gpio_Port == GPIOH) && Gpio_AF <= GPIO_AF15 ){
+					|| Gpio_Port == GPIOE || Gpio_Port == GPIOH) && Gpio_AF <= GPIO_AF15_EVENTOUT ){
 
 		if (Mode == Mode_AF){
 

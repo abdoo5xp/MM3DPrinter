@@ -31,7 +31,7 @@ extern Status_e HEATER_enuInit(uint8_t InitDutyCycle)
 {
 	uint8_t Return_status;
 
-	HeaterTimerInitConfigs.Prescaler = TIMER_PRESCALER;
+	HeaterTimerInitConfigs.Prescaler = 	TIMER_PRESCALER;
 	HeaterTimerInitConfigs.ClockDivision = TIM_CLOCKDIVISION_DIV1;
 	HeaterTimerInitConfigs.CounterMode = TIM_COUNTERMODE_UP;
 
@@ -42,7 +42,7 @@ extern Status_e HEATER_enuInit(uint8_t InitDutyCycle)
 
 
 	HeaterConfigs.Channel  =             HAL_TIM_ACTIVE_CHANNEL_2;
-	HeaterConfigs.Instance =             TIM4_BASE;
+	HeaterConfigs.Instance =             TIM3_BASE;
 	HeaterConfigs.Lock     =             HAL_UNLOCKED;
 	HeaterConfigs.State    =             HAL_TIM_STATE_RESET;
 	HeaterConfigs.Init     =             HeaterTimerInitConfigs;
@@ -110,10 +110,10 @@ void HAL_TIM_PWM_MspInit(TIM_HandleTypeDef *htim)
 	TimerConfigPin.ospeed=GPIO_SPEED_HIGH;
 
 	/* GPIO peripheral enable */
-	trace_printf("RCC-1  Enable Return = %d\n ",RCC_ControlAHB1PeriClk(RCC_AHB1_PREPH_GPIOB, RCC_PREPH_ENABLE));
+	trace_printf("RCC-1  Enable Return = %d\n ",Rcc_AHB1_PeriClockStatus(RCC_AHB1_PREPH_GPIOB, RCC_PREPH_ENABLE));
 
 	/* timer peripheral enable */
-	trace_printf("RCC-2 Enable Return = %d\n ",RCC_ControlAPB1PeriClk(RCC_APB1_PREPH_TIM4, RCC_PREPH_ENABLE));
+	trace_printf("RCC-2 Enable Return = %d\n ",Rcc_APB1_PeriClockStatus(RCC_APB1_PERI_CLOCK_TIM3, RCC_PREPH_ENABLE));
 
 	/* Init. the pin in GPIO */
 	trace_printf("GPIO Enable Return = %d\n ",GPIO_InitPin(&TimerConfigPin));

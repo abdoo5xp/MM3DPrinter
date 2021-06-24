@@ -8,12 +8,15 @@
 #include <stdint.h>
 #include <stm32f4xx.h>
 #include <stm32f4xx_hal_tim.h>
+#include "diag/Trace.h"
 
 #include "../../lib/Bit_Mask.h"
 #include "../../lib/Bit_Math.h"
 #include "../../lib/Error_codes.h"
+
 #include "Rcc.h"
 #include "GPIO.h"
+
 #include "Cutter.h"
 #include "Cutter_cfg.h"
 
@@ -26,6 +29,10 @@ Status_e Cutter_enuInit(void)
 	/* add the pulse info before passing the structure */
 //	CutterOCInitConfigs->Pulse = (InitAngle * FREQUENCY_PERIOD_TICKS )/100.0;
 
+	/* Bug Fix: assination of structure is made here instead of link time */
+	CutterConfigs.Init     = CutterTimerInitConfigs;
+	CutterOCInitConfigs.Pulse =	(WITHDRAW_ANGLE * FREQUENCY_PERIOD_TICKS )/100.0;
+
 	Return_status = HAL_TIM_PWM_Init(&CutterConfigs);
 	Return_status |= HAL_TIM_PWM_ConfigChannel(&CutterConfigs, &CutterOCInitConfigs, TIM_CHANNEL_4);
 
@@ -33,31 +40,34 @@ Status_e Cutter_enuInit(void)
 }
 
 
-static Status_e Cutter_enuChangeAngle(Cutter_Angles_e Cutter_Angle)
+static Status_e Cutter_enuChangeAngle(uint8_t Cutter_Angle)
 {
 	uint8_t Return_status;
-
-	CutterOCInitConfigs->Pulse =	(Cutter_Angle * FREQUENCY_PERIOD_TICKS )/100.0;
+	CutterOCInitConfigs.Pulse =	(Cutter_Angle * FREQUENCY_PERIOD_TICKS )/100.0;
 
 	Return_status = HAL_TIM_PWM_ConfigChannel(&CutterConfigs, &CutterOCInitConfigs, TIM_CHANNEL_4);
 	Return_status |= HAL_TIM_PWM_Start(&CutterConfigs,TIM_CHANNEL_4);
 	return Return_status;
 }
 
-Status_e Cutter_enuPerformCut(void){
-	/* after Init, Cut (Change angle to cut and start
-	 *            - delay - change angle to go back and start - stop)*/
-	Cutter_enuChangeAngle(CUT_ANGLE);
-	Cutter_enuChangeAngle(WITHDRAW_ANGLE);
+
+Status_e Cutter_enuTurnOn(void)
+{
+	uint8_t Return_status;
+
+	Return_status = Cutter_enuChangeAngle(CUT_ANGLE);
+	return Return_status;
 }
 
-//Status_e Cutter_enuStart(void)
-//{
-//	uint8_t Return_status;
-//
-//	Return_status = HAL_TIM_PWM_Start(&CutterConfigs,TIM_CHANNEL_4);
-//	return Return_status;
-//}
+Status_e Cutter_enuTurnOff(void)
+{
+	uint8_t Return_status;
+
+	Return_status = Cutter_enuChangeAngle(WITHDRAW_ANGLE);
+	return Return_status;
+}
+
+
 
 
 /* No of Ticks = Timer_Tick_freq / Desired Frequency */
