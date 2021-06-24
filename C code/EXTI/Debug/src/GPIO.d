@@ -1,0 +1,13 @@
+src/GPIO.o: ../src/GPIO.c ../src/../../lib/Bit_Mask.h \
+ ../src/../../lib/Bit_Math.h ../src/../../lib/STM32_F407_Registers.h \
+ ../src/../../lib/Error_codes.h ../src/GPIO.h
+
+../src/../../lib/Bit_Mask.h:
+
+../src/../../lib/Bit_Math.h:
+
+../src/../../lib/STM32_F407_Registers.h:
+
+../src/../../lib/Error_codes.h:
+
+../src/GPIO.h:
