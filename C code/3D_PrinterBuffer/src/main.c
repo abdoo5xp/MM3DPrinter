@@ -72,16 +72,19 @@ void Stepper_StateMachine()
 	{
 	case stage_1 :
 		Stepper_Stage = stage_2 ;
-
-		Extruder_SetFeedRate(EXTRUDER_M_1,6000);
+		Extruder_SetDirection(EXTRUDER_M_1,EXTRUDER_DIR_CCW);
+		Extruder_SetFeedRate(EXTRUDER_M_1,2000);
 		Extruder_SetMaterialLength(EXTRUDER_M_1,268000);
-
 		break;
 	case stage_2 :
-
+		Stepper_Stage = stage_3 ;
+		Extruder_SetFeedRate(EXTRUDER_M_2,4000);
+		Extruder_SetMaterialLength(EXTRUDER_M_2,100000);
 		break;
 	case stage_3 :
-
+		Stepper_Stage = stage_4;
+		Extruder_SetFeedRate(EXTRUDER_M_2,4000);
+		Extruder_SetMaterialLength(EXTRUDER_M_2,100000);
 		break;
 	case stage_4 :
 
@@ -97,6 +100,8 @@ int main(void)
 	Extruder_SetAllStatus(EXTRUDER_ENABLE);
 	Extruder_SetALLDirection(EXTRUDER_DIR_CW);
 
+	Extruder_SetFeedRate(EXTRUDER_M_1,2000);
+	Extruder_SetMaterialLength(EXTRUDER_M_1,268000);
 
 	while(1){
 
