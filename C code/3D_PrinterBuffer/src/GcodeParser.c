@@ -37,7 +37,7 @@ static TIM_HandleTypeDef    TimerBaseConfigs;
 static TIM_Base_InitTypeDef TimerBaseTimerInitConfigs;
 /*************************************************************************************************************************/
 
-static RT_Debug Cutter_Delay(uint32_t Cutter_delay)
+RT_Debug Cutter_Delay(uint32_t Cutter_delay)
 {
 	RT_Debug Return_Status = RT_SUCCESS ;
 	/*************************************Heater_Timer_Delay_Reconfigure********************************/
@@ -53,7 +53,7 @@ static RT_Debug Cutter_Delay(uint32_t Cutter_delay)
 	return Return_Status ;
 }
 
-static RT_Debug Heater_Delay(uint32_t Heater_delay)
+RT_Debug Heater_Delay(uint32_t Heater_delay)
 {
 	RT_Debug Return_Status = RT_SUCCESS ;
 	/*************************************Heater_Timer_Delay_Reconfigure********************************/
@@ -156,22 +156,19 @@ RT_Debug GcodeParser_TimerBaseInit(void)
  * Input/Output Parameters:
  * 					-Not Applicable (void)
  * ***************************************************************************************************************/
-void GcodeParser_enuStartParsing(uint8_t *GcodeArray,uint32_t NumberOfBytes)
+void GcodeParser_enuInitParsing(uint8_t *GcodeArray,uint32_t NumberOfBytes)
 {
 	GcodeDataArray = GcodeArray;
 	Size = NumberOfBytes;
 
-	GcodeParser_TimerBaseInit();
-	Extruder_SetCallBackFunction(GcodeParser_enuParseGcode);
-	Stepper_SetStatus(EXTRUDER_M_1,STEPPER_ENABLE);
-	Stepper_SetStatus(EXTRUDER_M_2,STEPPER_ENABLE);
-	//Stepper_SetStatus(EXTRUDER_M_3,STEPPER_ENABLE);
-	//Stepper_SetStatus(EXTRUDER_E,STEPPER_ENABLE);
-	Stepper_SetDirection(EXTRUDER_M_1,STEPPER_DIR_CW);
-	Stepper_SetDirection(EXTRUDER_M_2,STEPPER_DIR_CW);
-	//Stepper_SetDirection(EXTRUDER_M_3,STEPPER_DIR_CW);
-	//Stepper_SetDirection(EXTRUDER_E,STEPPER_DIR_CW);
-	GcodeParser_enuParseGcode();
+//	GcodeParser_TimerBaseInit();
+
+//	Extruder_SetCallBackFunction(GcodeParser_enuParseGcode);
+//	Stepper_SetStatus(EXTRUDER_M_1,STEPPER_ENABLE);
+//	Stepper_SetStatus(EXTRUDER_M_2,STEPPER_ENABLE);
+//	Stepper_SetDirection(EXTRUDER_M_1,STEPPER_DIR_CW);
+//	Stepper_SetDirection(EXTRUDER_M_2,STEPPER_DIR_CW);
+//	GcodeParser_enuParseGcode();
 }
 
 
