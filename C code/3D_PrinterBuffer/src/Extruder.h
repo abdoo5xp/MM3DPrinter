@@ -14,6 +14,12 @@
 
 typedef void (*PtrNotify)(void);
 
+typedef enum
+{
+	ExtruderAction_NotDone ,
+	ExtruderAction_Done
+}ExtruderAction_Status_enu;
+
 // Stepper_Status**********************************************************************************
 #define EXTRUDER_ENABLE				1
 #define EXTRUDER_DISABLE			0
@@ -185,5 +191,24 @@ extern RT_Debug Extruder_Continue(uint32_t Copy_ExtruderId);
  ***************************************************************************************************/
 RT_Debug Extruder_SetCallBackFunction(PtrNotify MterialEndNotify);
 
+
+/* Public Function:  Extruder_SetNotifyFlag														      *
+ * Description: This function is used to Set Flag Function at End of feeding Material
+ *
+ * Input parameters:
+ *      - Extruder_StopNotifyFlag	in range : pointer to uint32_t
+ *
+ * Return:
+ * 		- Status (uint8_t)
+ *         RT_SUCCESS
+ *         RT_PARAM
+ *         RT_ERROR
+ *         RT_TIME_OUT
+ *
+ * Input/Output Parameter:
+ * 		- Not Applicable
+
+ ***************************************************************************************************/
+RT_Debug Extruder_SetNotifyFlag(volatile uint32_t* Extruder_StopNotifyFlag);
 
 #endif /* EXTRUDER_H_ */

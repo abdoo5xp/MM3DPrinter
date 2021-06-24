@@ -206,6 +206,33 @@ RT_Debug Extruder_SetCallBackFunction(PtrNotify MterialEndNotify)
 	return Return_Status ;
 }
 
+
+/* Public Function:  Extruder_SetNotifyFlag														      *
+ * Description: This function is used to Set Flag Function at End of feeding Material
+ *
+ * Input parameters:
+ *      - Extruder_StopNotifyFlag	in range : pointer to uint32_t
+ *
+ * Return:
+ * 		- Status (uint8_t)
+ *         RT_SUCCESS
+ *         RT_PARAM
+ *         RT_ERROR
+ *         RT_TIME_OUT
+ *
+ * Input/Output Parameter:
+ * 		- Not Applicable
+
+ ***************************************************************************************************/
+RT_Debug Extruder_SetNotifyFlag(volatile uint32_t* Extruder_StopNotifyFlag)
+{
+	RT_Debug Return_status = RT_SUCCESS ;
+
+	Return_status = Stepper_SetNotifyFlag(Extruder_StopNotifyFlag);
+
+	return Return_status;
+}
+
 /* Public Function:  Extruder_Pause														      *
  * Description: This function is used to Pause Extruder
  *

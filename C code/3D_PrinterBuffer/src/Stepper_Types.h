@@ -8,6 +8,12 @@
 #ifndef STEPPER_TYPES_H_
 #define STEPPER_TYPES_H_
 
+typedef enum
+{
+	StepperAction_NotDone ,
+	StepperAction_Done
+}StepperAction_Status_enu;
+
 typedef struct {
 	Pincfg_t Stepper_Pin[STEPPER_PINS_NUM] 		;
 }Steppercfg_t;

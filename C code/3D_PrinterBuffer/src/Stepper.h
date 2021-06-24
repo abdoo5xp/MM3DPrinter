@@ -130,7 +130,6 @@ RT_Debug Stepper_SetAllStatus(uint32_t Stepper_Status);
 
 
 
-
 /* Public Function:  Stepper_SetCallBack														      *
  * Description: This function is used to Call User Function atEnd of feeding Material
  *
@@ -150,6 +149,25 @@ RT_Debug Stepper_SetAllStatus(uint32_t Stepper_Status);
  ***************************************************************************************************/
 RT_Debug Stepper_SetCallBack(PtrNotify Stepper_StopNotify);
 
+
+/* Public Function:  Stepper_SetNotifyFlag														      *
+ * Description: This function is used to Set Flag Function at End of feeding Material
+ *
+ * Input parameters:
+ *      - Stepper_StopNotifyFlag	in range : pointer to uint32_t
+ *
+ * Return:
+ * 		- Status (uint8_t)
+ *         RT_SUCCESS
+ *         RT_PARAM
+ *         RT_ERROR
+ *         RT_TIME_OUT
+ *
+ * Input/Output Parameter:
+ * 		- Not Applicable
+
+ ***************************************************************************************************/
+RT_Debug Stepper_SetNotifyFlag(volatile uint32_t* Stepper_StopNotifyFlag);
 
 /* Public Function:  Stepper_Pause														      *
  * Description: This function is used to Pause Stepper

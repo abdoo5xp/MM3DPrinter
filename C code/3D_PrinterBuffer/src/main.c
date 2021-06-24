@@ -25,6 +25,8 @@ typedef enum
 
 Stepper_Stage_enu Stepper_Stage = stage_1 ;
 
+volatile uint32_t ActionFlag = ExtruderAction_NotDone  ;
+
 void dataReceivedCallback(void)
 {
 	uint8_t * GcodeBytes;
@@ -66,28 +68,33 @@ void Stepper_PauseContinue_Test(void)
 	}while(0);
 }
 
-void Stepper_StateMachine()
+void Stepper_StateMachine(void)
 {
 	switch(Stepper_Stage)
 	{
 	case stage_1 :
 		Stepper_Stage = stage_2 ;
 		Extruder_SetDirection(EXTRUDER_M_1,EXTRUDER_DIR_CCW);
-		Extruder_SetFeedRate(EXTRUDER_M_1,2000);
-		Extruder_SetMaterialLength(EXTRUDER_M_1,268000);
+		Extruder_SetFeedRate(EXTRUDER_M_1,4000);
+		Extruder_SetMaterialLength(EXTRUDER_M_1,260000);
 		break;
 	case stage_2 :
 		Stepper_Stage = stage_3 ;
-		Extruder_SetFeedRate(EXTRUDER_M_2,4000);
+		Extruder_SetDirection(EXTRUDER_M_2,EXTRUDER_DIR_CW);
+		Extruder_SetFeedRate(EXTRUDER_M_2,2000);
 		Extruder_SetMaterialLength(EXTRUDER_M_2,100000);
 		break;
 	case stage_3 :
 		Stepper_Stage = stage_4;
-		Extruder_SetFeedRate(EXTRUDER_M_2,4000);
+		Extruder_SetDirection(EXTRUDER_M_2,EXTRUDER_DIR_CCW);
+		Extruder_SetFeedRate(EXTRUDER_M_2,2000);
 		Extruder_SetMaterialLength(EXTRUDER_M_2,100000);
 		break;
 	case stage_4 :
-
+		Stepper_Stage = stage_1;
+		Extruder_SetDirection(EXTRUDER_M_1,EXTRUDER_DIR_CW);
+		Extruder_SetFeedRate(EXTRUDER_M_1,4000);
+		Extruder_SetMaterialLength(EXTRUDER_M_1,260000);
 		break;
 	}
 }
@@ -96,15 +103,44 @@ int main(void)
 {
 	Extruder_Init();
 	//GcodeReceiver_vidInit(dataReceivedCallback);
+	Extruder_SetNotifyFlag(&ActionFlag);
 
 	Extruder_SetAllStatus(EXTRUDER_ENABLE);
 	Extruder_SetALLDirection(EXTRUDER_DIR_CW);
 
-	Extruder_SetFeedRate(EXTRUDER_M_1,2000);
-	Extruder_SetMaterialLength(EXTRUDER_M_1,268000);
+	Extruder_SetFeedRate(EXTRUDER_M_1,4000);
+	Extruder_SetMaterialLength(EXTRUDER_M_1,260000);
 
-	while(1){
+	while(1)
+	{
+		while(ActionFlag == ExtruderAction_NotDone);
+		ActionFlag = ExtruderAction_NotDone ;
 
+		Extruder_SetDirection(EXTRUDER_M_1,EXTRUDER_DIR_CCW);
+		Extruder_SetFeedRate(EXTRUDER_M_1,4000);
+		Extruder_SetMaterialLength(EXTRUDER_M_1,260000);
+
+		while(ActionFlag == ExtruderAction_NotDone);
+		ActionFlag = ExtruderAction_NotDone ;
+
+		Extruder_SetDirection(EXTRUDER_M_2,EXTRUDER_DIR_CW);
+		Extruder_SetFeedRate(EXTRUDER_M_2,2000);
+		Extruder_SetMaterialLength(EXTRUDER_M_2,100000);
+
+		while(ActionFlag == ExtruderAction_NotDone);
+		ActionFlag = ExtruderAction_NotDone ;
+
+		Extruder_SetDirection(EXTRUDER_M_2,EXTRUDER_DIR_CCW);
+		Extruder_SetFeedRate(EXTRUDER_M_2,2000);
+		Extruder_SetMaterialLength(EXTRUDER_M_2,100000);
+
+		while(ActionFlag == ExtruderAction_NotDone);
+		ActionFlag = ExtruderAction_NotDone ;
+
+
+		Extruder_SetDirection(EXTRUDER_M_1,EXTRUDER_DIR_CW);
+		Extruder_SetFeedRate(EXTRUDER_M_1,4000);
+		Extruder_SetMaterialLength(EXTRUDER_M_1,260000);
 	}
 	return 0;
 }

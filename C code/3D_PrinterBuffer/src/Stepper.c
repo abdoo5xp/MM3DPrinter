@@ -47,7 +47,7 @@ uint64_t Stepper_TimerPwm[4] =
 
 PtrNotify AppNotify ;
 
-StepperCallBack_enu Stepper_CallBack;
+volatile uint32_t *AppNotifyFlag  = NULL ;
 
 static uint32_t Stepper_Id;
 
@@ -91,14 +91,14 @@ static RT_Debug Stepper_TimerBaseInit(void)
 
 
 /* disables both the interrupt then the periperal*/
-static RT_Debug Stepper_TimerBaseStop_INT(void)
-{
-	RT_Debug Return_status;
-	Return_status = HAL_TIM_Base_Stop_IT(&TimerBaseConfigs); //passing htim pointer to struct
-	//trace_printf("HAL_TIM_Base_Stop_IT = %d\n",Return_status);
-
-	return Return_status;
-}
+//static RT_Debug Stepper_TimerBaseStop_INT(void)
+//{
+//	RT_Debug Return_status;
+//	Return_status = HAL_TIM_Base_Stop_IT(&TimerBaseConfigs); //passing htim pointer to struct
+//	//trace_printf("HAL_TIM_Base_Stop_IT = %d\n",Return_status);
+//
+//	return Return_status;
+//}
 
 
 
@@ -287,7 +287,7 @@ RT_Debug Stepper_SetDirection(uint32_t Copy_StepperId,uint32_t Stepper_Direction
 
 	if (Copy_StepperId < STEPPER_NUM && (Stepper_Direction == STEPPER_DIR_CW || Stepper_Direction == STEPPER_DIR_CCW ))
 	{
-	Gpio_WritePin(Steppercfg[Copy_StepperId].Stepper_Pin[STEPPER_DIR_PIN].Gpio_Port,Steppercfg[Copy_StepperId].Stepper_Pin[STEPPER_DIR_PIN].Gpio_PinNum,Stepper_Direction);
+		Gpio_WritePin(Steppercfg[Copy_StepperId].Stepper_Pin[STEPPER_DIR_PIN].Gpio_Port,Steppercfg[Copy_StepperId].Stepper_Pin[STEPPER_DIR_PIN].Gpio_PinNum,Stepper_Direction);
 	}
 	else
 	{
@@ -344,7 +344,7 @@ RT_Debug Stepper_SetStatus(uint32_t Copy_StepperId,uint32_t Stepper_Status){
 
 	if (Copy_StepperId < STEPPER_NUM && (Stepper_Status == STEPPER_ENABLE || Stepper_Status == STEPPER_DISABLE))
 	{
-	Gpio_WritePin(Steppercfg[Copy_StepperId].Stepper_Pin[STEPPER_ENABLE_PIN].Gpio_Port,Steppercfg[Copy_StepperId].Stepper_Pin[STEPPER_ENABLE_PIN].Gpio_PinNum,Stepper_Status);
+		Gpio_WritePin(Steppercfg[Copy_StepperId].Stepper_Pin[STEPPER_ENABLE_PIN].Gpio_Port,Steppercfg[Copy_StepperId].Stepper_Pin[STEPPER_ENABLE_PIN].Gpio_PinNum,Stepper_Status);
 	}
 	else
 	{
@@ -373,7 +373,7 @@ RT_Debug Stepper_SetAllStatus(uint32_t Stepper_Status)
 	{
 		for (uint32_t StepperIdx = 0 ; StepperIdx < STEPPER_NUM ; StepperIdx++)
 		{
-		Gpio_WritePin(Steppercfg[StepperIdx].Stepper_Pin[STEPPER_ENABLE_PIN].Gpio_Port,Steppercfg[StepperIdx].Stepper_Pin[STEPPER_ENABLE_PIN].Gpio_PinNum,Stepper_Status);
+			Gpio_WritePin(Steppercfg[StepperIdx].Stepper_Pin[STEPPER_ENABLE_PIN].Gpio_Port,Steppercfg[StepperIdx].Stepper_Pin[STEPPER_ENABLE_PIN].Gpio_PinNum,Stepper_Status);
 		}
 	}
 	else
@@ -396,19 +396,26 @@ void TIM8_BRK_TIM12_IRQHandler()
 		(TimerBaseConfigs.Instance->SR) &= ~(TIM_IT_UPDATE);
 	}
 
-	for(uint32_t Stepper_Idx = 0  ; Stepper_Idx < STEPPER_NUM ; Stepper_Idx++)
-	{
-	trace_printf("PWM_Stop = %d\n",HAL_TIM_PWM_Stop(&StepperChannelcfg[Stepper_Idx].StepperConfigs,StepperChannelcfg[Stepper_Idx].StepperChannel));
+	//	for(uint32_t Stepper_Idx = 0  ; Stepper_Idx < STEPPER_NUM ; Stepper_Idx++)
+	//	{
+	trace_printf("PWM_Stop = %d\n",HAL_TIM_PWM_Stop(&StepperChannelcfg[Stepper_Id].StepperConfigs,StepperChannelcfg[Stepper_Id].StepperChannel));
 	//Return_status = 			   HAL_TIM_PWM_Start(&StepperChannelcfg[StepperId].StepperConfigs,StepperChannelcfg[StepperId].StepperChannel);
-	trace_printf("StepperId = %d\n",Stepper_Idx);
-	}
+	trace_printf("StepperId = %d\n",Stepper_Id);
+	//	}
 
 	HAL_TIM_Base_Stop_IT(&TimerBaseConfigs); //passing htim pointer to struct
 
-	if(AppNotify && Stepper_CallBack == Stepper_CallBack_On)
+	if (AppNotifyFlag)
+	{
+		*AppNotifyFlag = StepperAction_Done ;
+	}
+
+	/*
+	if(AppNotify)
 	{
 		AppNotify();
 	}
+	*/
 }
 
 
@@ -443,5 +450,39 @@ RT_Debug Stepper_SetCallBack(PtrNotify Stepper_StopNotify)
 	}
 
 	return Return_status;
+}
 
+
+
+/* Public Function:  Stepper_SetNotifyFlag														      *
+ * Description: This function is used to Set Flag Function at End of feeding Material
+ *
+ * Input parameters:
+ *      - Stepper_StopNotifyFlag	in range : pointer to uint32_t
+ *
+ * Return:
+ * 		- Status (uint8_t)
+ *         RT_SUCCESS
+ *         RT_PARAM
+ *         RT_ERROR
+ *         RT_TIME_OUT
+ *
+ * Input/Output Parameter:
+ * 		- Not Applicable
+
+ ***************************************************************************************************/
+RT_Debug Stepper_SetNotifyFlag(volatile uint32_t* Stepper_StopNotifyFlag)
+{
+	RT_Debug Return_status = RT_SUCCESS ;
+
+	if (Stepper_StopNotifyFlag)
+	{
+		AppNotifyFlag = Stepper_StopNotifyFlag ;
+	}
+	else
+	{
+		Return_status = RT_ERROR ;
+	}
+
+	return Return_status;
 }
