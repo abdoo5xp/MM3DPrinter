@@ -31,7 +31,7 @@ void dataReceivedCallback(void)
 	uint8_t * GcodeBytes;
 	uint16_t GcodeNumberOfBytes;
 	GcodeBytes = GcodeReceiver_GetGcodeData(&GcodeNumberOfBytes);
-	GcodeParser_enuStartParsing(GcodeBytes, GcodeNumberOfBytes);
+	GcodeParser_enuInitParsing(GcodeBytes, GcodeNumberOfBytes);
 	trace_printf("The End elhamdullah \n");
 }
 
