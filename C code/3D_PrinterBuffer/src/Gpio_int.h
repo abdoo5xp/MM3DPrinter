@@ -91,37 +91,22 @@
 
 
 // AF Configurations Mask*****************************************************************
-// AF0:  (system)
-#define       GPIO_AF0							     BIT_CLR
-// AF1:  (TIM1/TIM2)
-#define       GPIO_AF1  						     BIT_0
-// AF2:  (TIM3..5)
-#define       GPIO_AF2  						     BIT_1
-// AF3:  (TIM8..11)
-#define       GPIO_AF3						         (BIT_0 | BIT_1)
-// AF4:  (I2C1..3)
-#define       GPIO_AF4							     BIT_2
-// AF5:  (SPI1/SPI2)
-#define       GPIO_AF5							     (BIT_0 | BIT_2)
-// AF6:  (SPI3)
-#define       GPIO_AF6							     (BIT_1 | BIT_2)
-// AF7:  (USART1..3)
-#define       GPIO_AF7							     (BIT_0 | BIT_1 | BIT_2)
-// AF8:  (USART4..6)
-#define       GPIO_AF8							     BIT_3
-// AF9:  (CAN1/CAN2, TIM12..14)
-#define       GPIO_AF9							     (BIT_0 | BIT_3)
-// AF10: (OTG_FS, OTG_HS)
-#define       GPIO_AF10							     (BIT_1 | BIT_3)
-// AF11: (ETH)
-#define       GPIO_AF11							     (BIT_0 | BIT_1 | BIT_3)
-// AF12: (FSMC, SDIO, OTG_HS(1))
-#define       GPIO_AF12							     (BIT_2 | BIT_3)
-// AF13: (DCMI)
-#define       GPIO_AF13							     (BIT_0 | BIT_2 | BIT_3)
-#define       GPIO_AF14							     (BIT_1 | BIT_2 | BIT_3)
-// AF15: (EVENTOUT)
-#define       GPIO_AF15							     (BIT_0 | BIT_1 | BIT_2 | BIT_3)
+#define  GPIO_AF0_SYSTEM				  BIT_CLR
+#define  GPIO_AF1_TIM1_TIM2               BIT_0
+#define  GPIO_AF2_TIM3_5                  BIT_1
+#define  GPIO_AF3_TIM8_11                 (BIT_0 | BIT_1)
+#define  GPIO_AF4_I2C1_3                  BIT_2
+#define  GPIO_AF5_SPI1_SPI2               (BIT_0 | BIT_2)
+#define  GPIO_AF6_SPI3                    (BIT_1 | BIT_2)
+#define  GPIO_AF7_USART1_3                (BIT_0 | BIT_1 | BIT_2)
+#define  GPIO_AF8_USART4_6                BIT_3
+#define  GPIO_AF9_CAN1_CAN2_TIM12_14      (BIT_0 | BIT_3)
+#define  GPIO_AF10_OTG_FS__OTG_HS         (BIT_1 | BIT_3)
+#define  GPIO_AF11_ETH                    (BIT_0 | BIT_1 | BIT_3)
+#define  GPIO_AF12_FSMC_SDIO__OTG_HS1     (BIT_2 | BIT_3)
+#define  GPIO_AF13_DCMI                   (BIT_0 | BIT_2 | BIT_3)
+#define  GPIO_AF14                        (BIT_1 | BIT_2 | BIT_3)
+#define  GPIO_AF15_EVENTOUT               (BIT_0 | BIT_1 | BIT_2 | BIT_3)
 
 
 

@@ -7,25 +7,33 @@
 #include <stm32f4xx_hal_conf.h>
 #include <stm32f4xx_hal_tim.h>
 #include "../../../lib/src/Bits.h"
+#include "../../lib/Error_codes.h"
 #include "../../../lib/src/RT_Debug.h"
 #include "Stepper.h"
 #include "Extruder.h"
+#include "GcodeParser.h"
+#include "GcodeReceiver.h"
 
+void dataReceivedCallback(void)
+{
+	uint8_t * GcodeBytes;
+	uint16_t GcodeNumberOfBytes;
+	GcodeBytes = GcodeReceiver_GetGcodeData(&GcodeNumberOfBytes);
+	GcodeParser_enuStartParsing(GcodeBytes, GcodeNumberOfBytes);
+	trace_printf("The End elhamdullah \n");
+}
 
 int main(void)
 {
-
 	Stepper_Init();
-	HAL_NVIC_SetPriority(TIM8_BRK_TIM12_IRQn, 1, 0);///* Set Interrupt Group Priority */
-	HAL_NVIC_ClearPendingIRQ(TIM8_BRK_TIM12_IRQn);
-	HAL_NVIC_EnableIRQ(TIM8_BRK_TIM12_IRQn);/* Enable the TIMx global Interrupt */
+	GcodeReceiver_vidInit(dataReceivedCallback);
 
-	Stepper_SetStatus(STEPPER_1,STEPPER_ENABLE);
-	Stepper_SetDirection(STEPPER_1,STEPPER_DIR_CW);
-
-	/*****************************************Least FeedRate = 500*********************************************************************/
-	Extruder_SetFeedRate(STEPPER_1,6000);
-	Extruder_SetMaterialLength(STEPPER_1,268000);
+//	Stepper_SetStatus(STEPPER_1,STEPPER_ENABLE);
+//	Stepper_SetDirection(STEPPER_1,STEPPER_DIR_CW);
+//
+//	/*****************************************Least FeedRate = 500*********************************************************************/
+//	Extruder_SetFeedRate(EXTRUDER_M_1,6000);
+//	Extruder_SetMaterialLength(EXTRUDER_M_1,268000);
 
 	/*Extruder_SetFeedRate(STEPPER_2,4000);
 	Extruder_SetMaterialLength(STEPPER_2,67000);*/

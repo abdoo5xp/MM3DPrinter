@@ -15,7 +15,6 @@
 #include "../../../lib/src/Bits.h"
 #include "Gpio_int.h"
 #include "Stepper.h"
-#include "Stepper_cfg.h"
 #include "Stepper_types.h"
 
 
@@ -45,7 +44,7 @@ Steppercfg_t Steppercfg[STEPPER_NUM] = {
 							   .Gpio_OSpeed  = GPIO_OSPEED_VERY_HIGH_SPEED		,
 							   .Gpio_PUPD 	 = GPIO_PUPD_PULL_UP 				,
 							   .Gpio_Port  	 = GPIOD							,
-							   .Gpio_PinNum  = GPIO_PIN13
+							   .Gpio_PinNum  = GPIO_PIN9
 							},
 						.Stepper_Pin[STEPPER_DIR_PIN] =
 							{
@@ -54,7 +53,7 @@ Steppercfg_t Steppercfg[STEPPER_NUM] = {
 							   .Gpio_OSpeed  = GPIO_OSPEED_VERY_HIGH_SPEED		,
 							   .Gpio_PUPD 	 = GPIO_PUPD_PULL_UP 				,
 							   .Gpio_Port  	 = GPIOD							,
-							   .Gpio_PinNum  = GPIO_PIN14
+							   .Gpio_PinNum  = GPIO_PIN10
 							},
 						.Stepper_Pin[STEPPER_PUL_PIN] =
 							{
@@ -63,8 +62,8 @@ Steppercfg_t Steppercfg[STEPPER_NUM] = {
 							   .Gpio_OSpeed  = GPIO_OSPEED_VERY_HIGH_SPEED		,
 							   .Gpio_PUPD 	 = GPIO_PUPD_FLOATING				,
 							   .Gpio_Port  	 = GPIOB							,
-							   .Gpio_PinNum  = GPIO_PIN9						,
-							   .Gpio_AF = GPIO_AF2
+							   .Gpio_PinNum  = GPIO_PIN6						,
+							   .Gpio_AF = GPIO_AF2_TIM3_5
 							}
 						},
 		[STEPPER_2]	=
@@ -94,8 +93,8 @@ Steppercfg_t Steppercfg[STEPPER_NUM] = {
 									   .Gpio_OSpeed  = GPIO_OSPEED_VERY_HIGH_SPEED		,
 									   .Gpio_PUPD 	 = GPIO_PUPD_FLOATING				,
 									   .Gpio_Port  	 = GPIOB							,
-									   .Gpio_PinNum  = GPIO_PIN8						,
-									   .Gpio_AF = GPIO_AF2
+									   .Gpio_PinNum  = GPIO_PIN7						,
+									   .Gpio_AF = GPIO_AF2_TIM3_5
 									}
 								}
 };
@@ -114,7 +113,7 @@ StepperChannelcfg_t StepperChannelcfg[STEPPER_NUM] ={
 				},
 					.StepperConfigs =
 				{
-						.Channel 			= HAL_TIM_ACTIVE_CHANNEL_4	,
+						.Channel 			= HAL_TIM_ACTIVE_CHANNEL_1	,
 						.Instance			= TIM4_BASE 				,
 						.Lock 				= HAL_UNLOCKED 				,
 						.State 				= HAL_TIM_STATE_RESET		,
@@ -128,7 +127,7 @@ StepperChannelcfg_t StepperChannelcfg[STEPPER_NUM] ={
 						.OCIdleState 		= TIM_OCIDLESTATE_RESET					,
 						.OCFastMode 		= TIM_OCFAST_ENABLE
 				},
-				.StepperChannel = TIM_CHANNEL_4
+				.StepperChannel = TIM_CHANNEL_1
 		},
 
 		[STEPPER_2] = {
@@ -143,7 +142,7 @@ StepperChannelcfg_t StepperChannelcfg[STEPPER_NUM] ={
 				},
 					.StepperConfigs =
 				{
-						.Channel 			= HAL_TIM_ACTIVE_CHANNEL_3	,
+						.Channel 			= HAL_TIM_ACTIVE_CHANNEL_2	,
 						.Instance			= TIM4_BASE 				,
 						.Lock 				= HAL_UNLOCKED 				,
 						.State 				= HAL_TIM_STATE_RESET		,
@@ -157,6 +156,6 @@ StepperChannelcfg_t StepperChannelcfg[STEPPER_NUM] ={
 						.OCIdleState 		= TIM_OCIDLESTATE_RESET					,
 						.OCFastMode 		= TIM_OCFAST_ENABLE
 				},
-				.StepperChannel = TIM_CHANNEL_3
+				.StepperChannel = TIM_CHANNEL_2
 		}
 };

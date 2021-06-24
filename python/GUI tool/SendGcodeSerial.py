@@ -71,16 +71,20 @@ def sendData():
             '''Send the ASCII of the Character -> X or Y or Z or E or F '''
             serialPort.write(bytes(match.group(1), 'ascii'))
             bytescounter += len(bytes(match.group(1), 'ascii'))
+
+
             '''Convert the Floating point number with the required precision
-               Then Convert it to int then to bytes then send it '''
+            Then Convert it to int then to bytes then send it '''
             ExtrusionLengthString = match.group(2)
-            ExtrusionLengthNumber = round(float(ExtrusionLengthString), 3) * PRECISION
-            '''This is to avoid overflow of the Number if the number after precision multiplication 
-                exceeds the two bytes limit
-                Note: for those who are going to develop The STM Code 
-                     you can have a state machine if you have received a character then start concatenating 
-                     the upcoming bytes till you form your number (find another character) 
-            '''
+            ExtrusionLengthNumber = round(float(ExtrusionLengthString), 3)
+            if match.group(1) != 'F':
+                ExtrusionLengthNumber *= PRECISION
+                '''This is to avoid overflow of the Number if the number after precision multiplication 
+                    exceeds the two bytes limit
+                    Note: for those who are going to develop The STM Code 
+                         you can have a state machine if you have received a character then start concatenating 
+                         the upcoming bytes till you form your number (find another character) 
+                '''
 
             '''to get your number on STM you have to shift left the upcoming bytes you are sending row data not ascii man '''
             ExtrusionLengthBytes = int(ExtrusionLengthNumber).to_bytes(3, "little")

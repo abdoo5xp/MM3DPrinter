@@ -16,6 +16,7 @@
 #include "Extruder_cfg.h"
 
 
+
 typedef void (*PtrNotify)(void);
 static uint32_t Delay_ns ;
 
@@ -62,16 +63,15 @@ void Extruder_SetFeedRate(uint32_t StepperId,uint32_t Extruder_FeedRate)
  * Input/Output Parameter:
  * 		- Not Applicable
  ***************************************************************************************************/
-void Extruder_SetMaterialLength(uint32_t StepperId, uint32_t Extruder_MaterialLength_um)
+void Extruder_SetMaterialLength(uint32_t StepperId, uint32_t Extruder_MaterialLength_um , StepperCallBack_enu ExtruderCallBack)
 {
-
 	trace_printf("Extruder_MaterialLength_um = %d\n",Extruder_MaterialLength_um);
 	uint64_t Steps = (uint64_t)(Extruder_MaterialLength_um * STEPPER_STEP_PER_REVOLUTION / EXTRUDER_LENGTH_um_PER_REVOLUTION) ;
 	trace_printf("Steps = %d\n",(uint32_t)Steps);
-	TimerBasePeriodTicks = (Delay_ns * 2 * Steps * 84) / (1000 * STEPPER_TIMER_BASE_PRESCALER) ;
-	trace_printf("TimerBasePeriodTicks = %x\n",TimerBasePeriodTicks);
+	StepperTimerBasePeriodTicks = (Delay_ns * 2 * Steps * 84) / (1000 * STEPPER_TIMER_BASE_PRESCALER) ;
+	trace_printf("TimerBasePeriodTicks = %x\n",StepperTimerBasePeriodTicks);
 
-	Stepper_StepsTime(StepperId,TimerBasePeriodTicks-20);
+	Stepper_StepsTime(StepperId,StepperTimerBasePeriodTicks-20,ExtruderCallBack);
 
 }
 

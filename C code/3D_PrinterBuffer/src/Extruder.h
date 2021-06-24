@@ -8,6 +8,13 @@
 #ifndef EXTRUDER_H_
 #define EXTRUDER_H_
 
+
+#include "Extruder_cfg.h"
+
+
+typedef void (*PtrNotify)(void);
+
+
 /* Public Function:  Extruder_SetFeedRate														      *
  * Description: This function is used to Set FeedRate of Extruder
  *
@@ -35,8 +42,7 @@ void Extruder_SetFeedRate(uint32_t StepperId, uint32_t Extruder_FeedRate);
  * Input/Output Parameter:
  * 		- Not Applicable
  ***************************************************************************************************/
-void Extruder_SetMaterialLength(uint32_t StepperId, uint32_t Extruder_MaterialLength);
-
+void Extruder_SetMaterialLength(uint32_t StepperId, uint32_t Extruder_MaterialLength_um , StepperCallBack_enu ExtruderCallBack);
 
 /* Public Function:  Extruder_Pause														      *
  * Description: This function is used to Pause Extruder
@@ -77,6 +83,24 @@ extern RT_Debug Extruder_Pause(uint32_t Copy_StepperId);
  ***************************************************************************************************/
 extern RT_Debug Extruder_Continue(uint32_t Copy_StepperId);
 
+/* Public Function:  Extruder_SetCallBackFunction														      *
+ * Description: This function is used to Configure Pin Status (HIGH ,LOW)
+ *
+ * Input parameters:
+ *      - MterialEndNotify		in range : Pointer To Function
+ *
+ * Return:
+ * 		- Status (uint8_t)
+ *         RT_SUCCESS
+ *         RT_PARAM
+ *         RT_ERROR
+ *         RT_TIME_OUT
+ *
+ * Input/Output Parameter:
+ * 		- Not Applicable
+
+ ***************************************************************************************************/
+RT_Debug Extruder_SetCallBackFunction(PtrNotify MterialEndNotify);
 
 
 #endif /* EXTRUDER_H_ */
