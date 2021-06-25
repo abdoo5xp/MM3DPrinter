@@ -118,42 +118,43 @@ static RT_Debug Stepper_TimerPwmInit(void)
 	return Return_status;
 }
 
-extern RT_Debug Stepper_Continue(uint32_t Copy_StepperId)
+extern RT_Debug Stepper_Continue(void)
 {
 	RT_Debug Return_status;
 
-	if (Copy_StepperId == STEPPER_1 || Copy_StepperId == STEPPER_2 || Copy_StepperId == STEPPER_3 || Copy_StepperId == STEPPER_4)
-	{
-		/********************************************************Timer Base Start********************************************************************/
-		(TimerBaseConfigs.Instance->SR) &= ~(TIM_IT_UPDATE);
-		Return_status = HAL_TIM_Base_Start_IT(&TimerBaseConfigs);//passing htim pointer to struct
 
-		/*****************PWM Start******************************************************************************************************************/
-		Return_status = HAL_TIM_PWM_Start(&StepperChannelcfg[Copy_StepperId].StepperConfigs,StepperChannelcfg[Copy_StepperId].StepperChannel);
-	}
-	else
+	/********************************************************Timer Base Start********************************************************************/
+	(TimerBaseConfigs.Instance->SR) &= ~(TIM_IT_UPDATE);
+	Return_status = HAL_TIM_Base_Start_IT(&TimerBaseConfigs);//passing htim pointer to struct
+
+	/*****************PWM Start******************************************************************************************************************/
+	for(uint32_t Stepper_Idx = 0  ; Stepper_Idx < STEPPER_NUM ; Stepper_Idx++)
 	{
-		Return_status = RT_PARAM ;
+		if (StepperWorking_Id[Stepper_Idx] == Stepper_Working)
+		{
+			trace_printf("PWM_Stop = %d\n",HAL_TIM_PWM_Start(&StepperChannelcfg[Stepper_Idx].StepperConfigs,StepperChannelcfg[Stepper_Idx].StepperChannel));
+			trace_printf("StepperId = %d\n",Stepper_Idx);
+		}
 	}
 
 	return Return_status;
 }
 
 
-extern RT_Debug Stepper_Pause(uint32_t Copy_StepperId)
+extern RT_Debug Stepper_Pause(void)
 {
 	RT_Debug Return_status;
 
-	if (Copy_StepperId == STEPPER_1 || Copy_StepperId == STEPPER_2 || Copy_StepperId == STEPPER_3 || Copy_StepperId == STEPPER_4)
+	for(uint32_t Stepper_Idx = 0  ; Stepper_Idx < STEPPER_NUM ; Stepper_Idx++)
 	{
-		Return_status  = HAL_TIM_PWM_Stop(&StepperChannelcfg[Copy_StepperId].StepperConfigs,StepperChannelcfg[Copy_StepperId].StepperChannel);
-		Return_status  = HAL_TIM_Base_Stop_IT(&TimerBaseConfigs); //passing htim pointer to struct
-		trace_printf("Counter= %x\n",TimerBaseConfigs.Instance->CNT);
+		if (StepperWorking_Id[Stepper_Idx] == Stepper_Working)
+		{
+			trace_printf("PWM_Stop = %d\n",HAL_TIM_PWM_Stop(&StepperChannelcfg[Stepper_Idx].StepperConfigs,StepperChannelcfg[Stepper_Idx].StepperChannel));
+			trace_printf("StepperId = %d\n",Stepper_Idx);
+		}
 	}
-	else
-	{
-		Return_status = RT_PARAM ;
-	}
+	Return_status  = HAL_TIM_Base_Stop_IT(&TimerBaseConfigs); //passing htim pointer to struct
+	trace_printf("Counter= %x\n",TimerBaseConfigs.Instance->CNT);
 
 	return Return_status;
 }
@@ -217,8 +218,9 @@ RT_Debug Stepper_StepsTime(uint32_t StepperId ,uint32_t Copy_TimerBasePeriodTick
 
 	RT_Debug Return_status = RT_SUCCESS ;
 
-	StepperWorking_Id[StepperId] = Stepper_Working ;
+	/************************These Two lines Should be in this irder to Enable Extruder only**************************/
 	StepperWorking_Id[STEPPER_NUM-1] = Stepper_Status ;
+	StepperWorking_Id[StepperId] = Stepper_Working ;
 	if (AppNotifyFlag)
 	{
 		*AppNotifyFlag = StepperAction_NotDone ;

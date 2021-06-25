@@ -24,28 +24,16 @@ static void Buffer_IsFull(void)
 {
 	trace_printf("Allah <3 \n");
 
-//	for (uint32_t Stepper_Idx = 0 ; Stepper_Idx < STEPPER_NUM ; Stepper_Idx++)
-//	{
-//		if (StepperWorking_Id[Stepper_Idx] == Stepper_Working)
-//		{
-//			Stepper_Pause(Stepper_Idx);
-//		}
-//	}
+	Stepper_Pause();
+
 }
 
 
 static void Buffer_IsEmpty(void)
 {
 	trace_printf("Allah Akbar <3 ");
-/*
-	for (uint32_t Stepper_Idx = 0 ; Stepper_Idx < STEPPER_NUM ; Stepper_Idx++)
-	{
-		if (StepperWorking_Id[Stepper_Idx] == Stepper_Working)
-		{
-			Stepper_Continue(Stepper_Idx);
-		}
-	}
-	*/
+	Stepper_Continue();
+
 }
 
 void Buffer_Init(void)

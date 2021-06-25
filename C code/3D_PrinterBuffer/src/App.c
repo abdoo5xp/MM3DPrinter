@@ -5,7 +5,6 @@
  *      Author: abdoo
  */
 
-
 #include <stdint.h>
 #include "../../lib/Bit_Mask.h"
 #include "../../lib/Bit_Math.h"
@@ -24,7 +23,7 @@
 #include "App_cfg.h"
 
 
-			/* Call the Set Material to run the Material Extruder and the main extruder   */
+/* Call the Set Material to run the Material Extruder and the main extruder   */
 
 
 
@@ -46,6 +45,8 @@ static void App_vidMaterialSwap(uint8_t OldMaterial, uint8_t CurrentMaterial,uin
 {
 	IR_State_e IRHasNewMaterialReached = IR_State_Off;
 	/*Extrude the old material to provide matrial for the Offset Length */
+	Extruder_SetDirection(OldMaterial,EXTRUDER_DIR_CW);
+	Extruder_SetFeedRate(OldMaterial, APP_REVERSE_FEEDRATE);
 	Extruder_SetMaterialLength(OldMaterial, APP_MATERIAL_OFFSET_um, EXTRUDER_ENABLE);
 	/*Wait for it */
 	App_vidWaitForActionExecution();
@@ -64,27 +65,70 @@ static void App_vidMaterialSwap(uint8_t OldMaterial, uint8_t CurrentMaterial,uin
 	/*Wait till Retraction */
 	App_vidWaitForActionExecution();
 
-	/*Run the new material */
-	Extruder_SetDirection(CurrentMaterial ,EXTRUDER_DIR_CW);
-	Extruder_SetFeedRate(CurrentMaterial, FeedRate);
-	Extruder_SetMaterialLength(CurrentMaterial, MaterialLength, EXTRUDER_ENABLE);
+	/***************************Move the old material from Cutter to The Heater**************************************/
+	Extruder_SetDirection(EXTRUDER_E ,EXTRUDER_DIR_CW);
+	Extruder_SetFeedRate(EXTRUDER_E, FeedRate);
+	Extruder_SetMaterialLength(EXTRUDER_E, APP_CUTTER_HEATER_OFFSET_um, EXTRUDER_DISABLE);
 
-	/*Wait till it reaches to the heater */
-	do
+	/****************************************************************************************************************/
+
+	/*if New Material Length Less than Distance Between Feeder and Heater
+	 * Feed with compensated Length (Offset Between Feeder and Heater - Material Length)
+	 * 	Extruder_SetMaterialLength(CurrentMaterial, MaterialLength + CompensatedLength, EXTRUDER_DISABLE);
+	 *
+	 * Retraction The compensated Length
+	 */
+	/*TODO: What if this (APP_FEEDER_HEATER_OFFSET - MaterialLength) is larger than buffer size ??!! */
+	if(APP_FEEDER_HEATER_OFFSET_um > MaterialLength)
 	{
-		IR_enuGetState(&IRHasNewMaterialReached);
-	}while(IRHasNewMaterialReached == IR_State_Off);
+		/*Run the new material */
+		Extruder_SetDirection(CurrentMaterial ,EXTRUDER_DIR_CW);
+		Extruder_SetFeedRate(CurrentMaterial, FeedRate);
+		Extruder_SetMaterialLength(CurrentMaterial, MaterialLength + (APP_FEEDER_HEATER_OFFSET_um - MaterialLength) , EXTRUDER_DISABLE);
 
-	/*Pause the Feed of the new material */
-	Extruder_Pause(CurrentMaterial);
+		/*Wait till action complete*/
+		App_vidWaitForActionExecution();
 
-	/*join the two material to together */
-	HEATER_enuStart();
-	Service_enuDelay(APP_HEATING_TIME);
-	HEATER_enuStop();
+		/*join the two material to together */
+		HEATER_enuStart();
+		Service_enuDelay(APP_HEATING_TIME);
+		HEATER_enuStop();
 
-	/*Continue the Feed of the new material */
-	Extruder_Continue(CurrentMaterial);
+		/*Retract the offset material */
+		Extruder_SetDirection(CurrentMaterial ,EXTRUDER_DIR_CCW);
+		Extruder_SetFeedRate(CurrentMaterial, FeedRate);
+		Extruder_SetMaterialLength(CurrentMaterial, (APP_FEEDER_HEATER_OFFSET_um - MaterialLength) , EXTRUDER_ENABLE);
+
+	}
+	else
+	{
+
+		/*Run the new material */
+		Extruder_SetDirection(CurrentMaterial ,EXTRUDER_DIR_CW);
+		Extruder_SetFeedRate(CurrentMaterial, FeedRate);
+		Extruder_SetMaterialLength(CurrentMaterial, MaterialLength , EXTRUDER_DISABLE);
+
+		/*Wait till it reaches to the heater */
+		do
+		{
+			IR_enuGetState(&IRHasNewMaterialReached);
+		}while(IRHasNewMaterialReached == IR_State_Off);
+
+		/*Pause the Feed of the new material if Material Length > Offset Between Feeder and Heater */
+		Extruder_Pause();
+
+		/*join the two material to together */
+		HEATER_enuStart();
+		Service_enuDelay(APP_HEATING_TIME);
+		HEATER_enuStop();
+
+		/*Continue the Feed of the new material if Material Length > Offset Between Feeder and Heater */
+		Extruder_Continue();
+		/***********************************Start Extruder After Heating************************************************************/
+		Extruder_SetDirection(EXTRUDER_E ,EXTRUDER_DIR_CW);
+		Extruder_SetFeedRate(EXTRUDER_E, FeedRate);
+		Extruder_SetMaterialLength(EXTRUDER_E, MaterialLength - APP_FEEDER_HEATER_OFFSET_um , EXTRUDER_DISABLE);
+	}
 }
 
 /*TODO: Modify this function to set the system in sleep mode, till the reception of Gcode*/
@@ -93,11 +137,14 @@ void App_vidInit()
 	Extruder_Init();
 	Extruder_SetAllStatus(EXTRUDER_ENABLE);
 	Extruder_SetALLDirection(EXTRUDER_DIR_CW);
-
+	/* Limit Switch */
 	Buffer_Init();
+	/*******************/
 	Cutter_enuInit();
 	HEATER_enuInit(HEATER_DUTYCYCLE);
+	/*************Timer Delay of Heater and Cutter *********************************/
 	Service_TimerBaseInit();
+	/******************************************************************************/
 	GcodeReceiver_vidInit(dataReceivedCallback);
 	Extruder_SetNotifyFlag(&Extruder_ActionDoneFlag);
 }

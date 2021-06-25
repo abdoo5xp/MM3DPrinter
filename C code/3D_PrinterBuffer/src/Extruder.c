@@ -250,11 +250,11 @@ RT_Debug Extruder_SetNotifyFlag(volatile uint32_t* Extruder_StopNotifyFlag)
  * 		- Not Applicable
 
  ***************************************************************************************************/
-extern RT_Debug Extruder_Pause(uint32_t Copy_StepperId)
+extern RT_Debug Extruder_Pause()
 {
 	RT_Debug Return_Status = RT_SUCCESS ;
 
-	Return_Status = Stepper_Pause(Copy_StepperId);
+	Return_Status = Stepper_Pause();
 
 	return Return_Status ;
 }
@@ -277,12 +277,12 @@ extern RT_Debug Extruder_Pause(uint32_t Copy_StepperId)
  * 		- Not Applicable
 
  ***************************************************************************************************/
-extern RT_Debug Extruder_Continue(uint32_t Copy_StepperId)
+extern RT_Debug Extruder_Continue(void)
 {
 
 	RT_Debug Return_Status = RT_SUCCESS ;
 
-	Return_Status = Stepper_Continue(Copy_StepperId);
+	Return_Status = Stepper_Continue();
 
 	return Return_Status ;
 

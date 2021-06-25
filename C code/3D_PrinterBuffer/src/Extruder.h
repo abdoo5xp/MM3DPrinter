@@ -155,7 +155,7 @@ void Extruder_SetMaterialLength(uint32_t StepperId, uint32_t Extruder_MaterialLe
  * 		- Not Applicable
 
  ***************************************************************************************************/
-extern RT_Debug Extruder_Pause(uint32_t Copy_ExtruderId);
+extern RT_Debug Extruder_Pause(void);
 
 
 /* Public Function:  Extruder_Continue														      *
@@ -175,7 +175,7 @@ extern RT_Debug Extruder_Pause(uint32_t Copy_ExtruderId);
  * 		- Not Applicable
 
  ***************************************************************************************************/
-extern RT_Debug Extruder_Continue(uint32_t Copy_ExtruderId);
+extern RT_Debug Extruder_Continue(void);
 
 /* Public Function:  Extruder_SetCallBackFunction														      *
  * Description: This function is used to Configure Pin Status (HIGH ,LOW)

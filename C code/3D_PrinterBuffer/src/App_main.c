@@ -1,6 +1,5 @@
 // ----------------------------------------------------------------------------
-
-#include <stdio.h>
+#include <stdint.h>
 #include "../../../lib/src/Bits.h"
 #include "../../lib/Error_codes.h"
 #include "../../../lib/src/RT_Debug.h"
@@ -18,6 +17,7 @@ int main(void)
 
 	/*Wait till the Gcode is Received */
 	App_vidWaitForDataReception();
+
 
 	while(1)
 	{

@@ -193,7 +193,7 @@ RT_Debug Stepper_SetNotifyFlag(volatile uint32_t* Stepper_StopNotifyFlag);
  * 		- Not Applicable
 
  ***************************************************************************************************/
-extern RT_Debug Stepper_Pause(uint32_t Copy_StepperId);
+extern RT_Debug Stepper_Pause(void);
 
 
 /* Public Function:  Stepper_Continue														      *
@@ -213,7 +213,7 @@ extern RT_Debug Stepper_Pause(uint32_t Copy_StepperId);
  * 		- Not Applicable
 
  ***************************************************************************************************/
-extern RT_Debug Stepper_Continue(uint32_t Copy_StepperId);
+extern RT_Debug Stepper_Continue(void);
 
 
 
