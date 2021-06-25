@@ -14,5 +14,5 @@
 #define APP_TIMER_BASE_PRESCALER		3999
 #define APP_HEATING_TIME				10000
 #define APP_CUTTING_TIME				10000
-
+#define HEATER_DUTYCYCLE				78
 #endif /* APP_CFG_H_ */

@@ -9,7 +9,7 @@
 #define BUFFER_H_
 
 
-
+extern void Buffer_Init(void);
 
 
 #endif /* BUFFER_H_ */

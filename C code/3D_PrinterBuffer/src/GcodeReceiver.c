@@ -11,6 +11,7 @@
 #include "../../lib/Bits.h"
 #include "../../lib/Bit_Math.h"
 #include "../../lib/Error_codes.h"
+#include "../../lib/src/RT_Debug.h"
 #include "GPIO_int.h"
 #include "Rcc_int.h"
 #include "NVIC.h"

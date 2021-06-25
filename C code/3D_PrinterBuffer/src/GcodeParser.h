@@ -9,20 +9,6 @@
 #define GCODEPARSER_H_
 
 
-typedef enum{
-	GcodeParser_ExtrudeMaterial,
-	GcodeParser_ChangeFeedRate,
-	GcodeParser_SwapMaterial
-}GcodeParser_ActionTypes_e;
-
-typedef struct {
-	GcodeParser_ActionTypes_e action;
-	uint32_t MaterialLength_um;
-	uint32_t Direction;  			 /*one of the Extruder DIR Macros*/
-	uint32_t FeedRate;
-	uint8_t  Material;				 /* EXTRUDER_M_1, EXTRUDER_M_2, EXTRUDER_M_3, EXTRUDER_E */
-}GcodeParser_Action_t;
-
 /**************************************************************************************************************
  * Public Function:GcodeParser_enuStartParsing()
  * Description: This function is used to start the parsing process
@@ -59,13 +45,7 @@ void GcodeParser_enuInitParsing(uint8_t *GcodeArray,uint32_t NumberOfBytes);
  * Input/Output Parameters:
  * 					-Not Applicable (void)
  * ***************************************************************************************************************/
-void GcodeParser_enuParseGcode(GcodeParser_Action_t *);
+APP_GcodeEndStatus_e GcodeParser_enuParseGcode(GcodeParser_Action_t *action );
 
-
-RT_Debug GcodeParser_TimerBaseInit(void);
-
-RT_Debug Heater_Delay(uint32_t Heater_delay);
-
-RT_Debug Cutter_Delay(uint32_t Cutter_delay);
 
 #endif /* GCODEPARSER_H_ */

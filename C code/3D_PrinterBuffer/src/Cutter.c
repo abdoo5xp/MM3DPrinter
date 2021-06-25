@@ -44,7 +44,6 @@ Status_e Cutter_enuInit(void)
 	return Return_status;
 }
 
-
 static Status_e Cutter_enuChangeAngle(uint8_t Cutter_Angle)
 {
 	uint8_t Return_status;
@@ -54,7 +53,6 @@ static Status_e Cutter_enuChangeAngle(uint8_t Cutter_Angle)
 	Return_status |= HAL_TIM_PWM_Start(&CutterConfigs,TIM_CHANNEL_1);
 	return Return_status;
 }
-
 
 Status_e Cutter_enuTurnOn(void)
 {

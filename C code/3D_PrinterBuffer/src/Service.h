@@ -8,6 +8,8 @@
 #ifndef SERVICE_H_
 #define SERVICE_H_
 
+
+
 /**************************************************************************************************************
  * Public Function:Service_u32Concat
  * Description: This function is used to concatenate the array elements
@@ -23,5 +25,11 @@
  * 					-Not Applicable (void)
  * ***************************************************************************************************************/
 uint32_t Service_u32Concat(uint8_t *NumbersArray, uint8_t ArraySize);
+
+
+RT_Debug Service_TimerBaseInit(void);
+
+
+RT_Debug Service_enuDelay(uint32_t delay);
 
 #endif /* SERVICE_H_ */
