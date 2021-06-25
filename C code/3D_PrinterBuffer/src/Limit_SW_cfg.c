@@ -48,16 +48,16 @@ const LimitSW_cfg_s LimitSWcfg[LIMIT_SW_NUM] = {
 				 .Gpio_OSpeed  	 = GPIO_OSPEED_VERY_HIGH_SPEED		,
 	  		     .Gpio_PUPD 	 = GPIO_PUPD_FLOATING 				,
 			     .Gpio_Port  	 = GPIOA							,
-				 .Gpio_PinNum    = GPIO_PIN2
+				 .Gpio_PinNum    = GPIO_PIN1
 				},
 				.exti_config =
 				{
-				 .EXTINum = 2 ,
+				 .EXTINum = 1 ,
 				 .EdgeDetectionType = EXTI_EDGE_RISING ,
 				 .maskType = EXTI_MASKTYPE_INTERRUPT ,
-				 .pinNum = 2,
+				 .pinNum = 1,
 				 .port  = EXTI_PORTA
 				},
-				.EXINT_Line = _EXTI2_IRQn
+				.EXINT_Line = _EXTI1_IRQn
 		}
 };

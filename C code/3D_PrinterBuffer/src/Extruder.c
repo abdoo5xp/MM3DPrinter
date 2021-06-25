@@ -142,11 +142,11 @@ void Extruder_SetFeedRate(uint32_t StepperId,uint32_t Extruder_FeedRate)
 
 
 	/* 84,000,000 / 128 --> Ans /50 , where 50 is the desired frequency */
-	trace_printf("Delay_ns = %d\n",Delay_ns);
-	trace_printf("Freq = %d\n",1000000000 / (Delay_ns * 2) );
+	//trace_printf("Delay_ns = %d\n",Delay_ns);
+	//trace_printf("Freq = %d\n",1000000000 / (Delay_ns * 2) );
 
 	StepperFrequencyPeriodTicks = (STEPPER_TIMER_PWM_FREQ_Mhz * Delay_ns * 2 ) / 1000 ;
-	trace_printf("FREQUENCY_PERIOD_TICKS = %x\n",StepperFrequencyPeriodTicks);
+	//trace_printf("FREQUENCY_PERIOD_TICKS = %x\n",StepperFrequencyPeriodTicks);
 	Stepper_SetSpeed(StepperId,StepperFrequencyPeriodTicks);
 
 /*desired time = Num_timer_ticks * Time_of_one_tick */
@@ -168,11 +168,11 @@ void Extruder_SetFeedRate(uint32_t StepperId,uint32_t Extruder_FeedRate)
  ***************************************************************************************************/
 void Extruder_SetMaterialLength(uint32_t StepperId, uint32_t Extruder_MaterialLength_um, ExtruderrWorking_enu Extruder_Status)
 {
-	trace_printf("Extruder_MaterialLength_um = %d\n",Extruder_MaterialLength_um);
+	//trace_printf("Extruder_MaterialLength_um = %d\n",Extruder_MaterialLength_um);
 	uint64_t Steps = (uint64_t)(Extruder_MaterialLength_um * STEPPER_STEP_PER_REVOLUTION / EXTRUDER_LENGTH_um_PER_REVOLUTION) ;
-	trace_printf("Steps = %d\n",(uint32_t)Steps);
+	//trace_printf("Steps = %d\n",(uint32_t)Steps);
 	StepperTimerBasePeriodTicks = (Delay_ns * 2 * Steps * 84) / (1000 * STEPPER_TIMER_BASE_PRESCALER) ;
-	trace_printf("TimerBasePeriodTicks = %x\n",StepperTimerBasePeriodTicks);
+	//trace_printf("TimerBasePeriodTicks = %x\n",StepperTimerBasePeriodTicks);
 
 	Stepper_StepsTime(StepperId,StepperTimerBasePeriodTicks-20,Extruder_Status);
 

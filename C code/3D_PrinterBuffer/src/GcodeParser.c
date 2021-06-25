@@ -88,11 +88,6 @@ APP_GcodeEndStatus_e GcodeParser_enuParseGcode(GcodeParser_Action_t *action)
 		OldMaterial = GcodeDataArray[ByteIdx+4];
 	}
 
-	if(ByteIdx >= Size )
-	{
-		trace_printf("End of GCode\n");
-		return APP_GcodeEnd;
-	}
 
 	/*Get the Material Extrusion Length Bytes */
 	LengthTemp[0] = GcodeDataArray[ByteIdx+1];
@@ -131,6 +126,11 @@ APP_GcodeEndStatus_e GcodeParser_enuParseGcode(GcodeParser_Action_t *action)
 		action->Material= GcodeDataArray[ByteIdx] - 'X';
 		action->Direction = EXTRUDER_DIR_CW;
 
+	if(ByteIdx+4 >= Size )
+	{
+		//trace_printf("End of GCode\n");
+		return APP_GcodeEnd;
+	}
 
 	/*Go to the next Gcode line */
 	ByteIdx +=4;

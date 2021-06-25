@@ -35,9 +35,9 @@ const IRcfg_t IRcfg[IR_NUM] = {
 			 	 	 	 	 	   {  .Gpio_Mode  	 = GPIO_MODE_OUTPUT 		    	,
 									  .Gpio_OType 	 = GPIO_OTYPE_PUSH_PULL    			,
 									  .Gpio_OSpeed   = GPIO_OSPEED_VERY_HIGH_SPEED		,
-									  .Gpio_PUPD 	 = GPIO_PUPD_PULL_UP 				,
-									  .Gpio_Port  	 = GPIOD							,
-									  .Gpio_PinNum 	 = GPIO_PIN14
+									  .Gpio_PUPD 	 = GPIO_PUPD_PULL_DOWN			,
+									  .Gpio_Port  	 = GPIOA						,
+									  .Gpio_PinNum 	 = GPIO_PIN8
 			 	 	 	 	 	   }
 		}
 

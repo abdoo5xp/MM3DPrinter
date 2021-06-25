@@ -33,6 +33,7 @@ int main(void)
 		/*Check if the GCode has ended */
 		if(APP_GcodeEnd == App_HasGcodeEnded() )
 		{
+			trace_printf("End of Gcode \n");
 			/*Cut the power from your motors,
 			 *  and Set the System in sleep mode  */
 			App_vidSystemSleep();

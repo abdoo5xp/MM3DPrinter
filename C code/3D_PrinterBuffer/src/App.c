@@ -72,6 +72,8 @@ static void App_vidMaterialSwap(uint8_t OldMaterial, uint8_t CurrentMaterial,uin
 
 	/****************************************************************************************************************/
 
+	App_vidWaitForActionExecution();
+
 	/*if New Material Length Less than Distance Between Feeder and Heater
 	 * Feed with compensated Length (Offset Between Feeder and Heater - Material Length)
 	 * 	Extruder_SetMaterialLength(CurrentMaterial, MaterialLength + CompensatedLength, EXTRUDER_DISABLE);
@@ -82,6 +84,8 @@ static void App_vidMaterialSwap(uint8_t OldMaterial, uint8_t CurrentMaterial,uin
 	if(APP_FEEDER_HEATER_OFFSET_um > MaterialLength)
 	{
 		/*Run the new material */
+
+		trace_printf("MaterialLength <  APP_FEEDER_HEATER_OFFSET_um \n");
 		Extruder_SetDirection(CurrentMaterial ,EXTRUDER_DIR_CW);
 		Extruder_SetFeedRate(CurrentMaterial, FeedRate);
 		Extruder_SetMaterialLength(CurrentMaterial, MaterialLength + (APP_FEEDER_HEATER_OFFSET_um - MaterialLength) , EXTRUDER_DISABLE);
@@ -105,6 +109,7 @@ static void App_vidMaterialSwap(uint8_t OldMaterial, uint8_t CurrentMaterial,uin
 
 		/*Run the new material */
 		Extruder_SetDirection(CurrentMaterial ,EXTRUDER_DIR_CW);
+		trace_printf("FeedRate %d\n",FeedRate);
 		Extruder_SetFeedRate(CurrentMaterial, FeedRate);
 		Extruder_SetMaterialLength(CurrentMaterial, MaterialLength , EXTRUDER_DISABLE);
 
@@ -114,6 +119,7 @@ static void App_vidMaterialSwap(uint8_t OldMaterial, uint8_t CurrentMaterial,uin
 			IR_enuGetState(&IRHasNewMaterialReached);
 		}while(IRHasNewMaterialReached == IR_State_Off);
 
+		trace_printf("read IR Wrong!!!! \n");
 		/*Pause the Feed of the new material if Material Length > Offset Between Feeder and Heater */
 		Extruder_Pause();
 
@@ -191,11 +197,14 @@ void App_vidTakeAction(GcodeParser_Action_t* ExtruderAction)
 	{
 	case GcodeParser_ExtrudeMaterial:
 	case GcodeParser_ChangeFeedRate :
+		trace_printf("GcodeParser_ExtrudeMaterial Stepper= %d \n" , ExtruderAction->Material);
 		Extruder_SetDirection(ExtruderAction->Material, ExtruderAction->Direction);
 		Extruder_SetFeedRate(ExtruderAction->Material, ExtruderAction->FeedRate);
+		Extruder_SetFeedRate(EXTRUDER_E, ExtruderAction->FeedRate);
 		Extruder_SetMaterialLength(ExtruderAction->Material, ExtruderAction->MaterialLength_um, EXTRUDER_ENABLE);
 		break;
 	case GcodeParser_SwapMaterial:
+		trace_printf("GcodeParser_Swap \n");
 		App_vidMaterialSwap(ExtruderAction->OldMaterial, ExtruderAction->Material,ExtruderAction->MaterialLength_um,ExtruderAction->FeedRate);
 		break;
 	}
