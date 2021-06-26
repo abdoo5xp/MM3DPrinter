@@ -4,7 +4,7 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
-../src/GPIO.c \
+../src/Gpio.c \
 ../src/Heater.c \
 ../src/Rcc.c \
 ../src/Timer.c \
@@ -15,7 +15,7 @@ C_SRCS += \
 ../src/stm32f4xx_hal_tim.c 
 
 OBJS += \
-./src/GPIO.o \
+./src/Gpio.o \
 ./src/Heater.o \
 ./src/Rcc.o \
 ./src/Timer.o \
@@ -26,7 +26,7 @@ OBJS += \
 ./src/stm32f4xx_hal_tim.o 
 
 C_DEPS += \
-./src/GPIO.d \
+./src/Gpio.d \
 ./src/Heater.d \
 ./src/Rcc.d \
 ./src/Timer.d \

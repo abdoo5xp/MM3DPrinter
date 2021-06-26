@@ -35,7 +35,7 @@
 
 #define 	STEPPER_FREQUENCY_PERIOD_TICKS	4200
 
-#define 	STEPPER_TIMER_BASE_PRESCALER 	49999  /* because prescaler internal = x + 1 from st*/
+#define 	STEPPER_TIMER_BASE_PRESCALER 	59999  /* because prescaler internal = x + 1 from st*/
 
 
 #endif /* STEPPER_CFG_H_ */

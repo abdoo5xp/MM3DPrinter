@@ -39,7 +39,7 @@ in range { GPIO_PIN_0	,
  *			GPIO_PIN_14 ,
  *			GPIO_PIN_15 }
  */
-#define IR_GPIO_PINNUM	GPIO_PIN0
+#define IR_GPIO_PINNUM	GPIO_PIN8
 
 
 

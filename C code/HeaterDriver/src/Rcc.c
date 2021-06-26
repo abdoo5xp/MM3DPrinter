@@ -2,845 +2,806 @@
  * Rcc.c
  *
  *  Created on: Jan 29, 2021
- *      Author: abdoo
+ *      Author: micro
  */
 
-#include <stdlib.h>
 #include <stdint.h>
-#include "../../lib/Bit_Mask.h"
-#include "../../lib/Bit_Math.h"
-#include "../../lib/STM32_F407_Registers.h"
-#include "../../../lib/Error_codes.h"
-#include "Rcc.h"
-
-#define SW_CLEAR			(BIT_MASK_CLEAR_0 & BIT_MASK_CLEAR_1)
-#define SWS_MASK			(BIT_MASK_2  | BIT_MASK_3			)
-#define PLL_RDY_MASK		(BIT_MASK_25 | BIT_MASK_27 			)
-#define PLL_SHIFT_M_POS		0
-#define PLL_SHIFT_N_POS		6
-#define PLL_SHIFT_P_POS		16
-#define PLL_SHIFT_Q_POS		24
-#define PLL_SHIFT_SRC_POS	22
-
-#define PLL_MASK_M			(BIT_MASK_0 | BIT_MASK_1 | BIT_MASK_2 | BIT_MASK_3 | BIT_MASK_4 | BIT_MASK_5)
-#define PLL_MASK_N			(BIT_MASK_6 | BIT_MASK_7 | BIT_MASK_8 | BIT_MASK_9 | BIT_MASK_10 \
-							|BIT_MASK_11 | BIT_MASK_12 | BIT_MASK_13 | BIT_MASK_14)
-#define PLL_MASK_P			(BIT_MASK_17 | BIT_MASK_16)
-#define PLL_MASK_Q			(BIT_MASK_24 | BIT_MASK_25 | BIT_MASK_26 | BIT_MASK_27)
-#define PLL_MASK_SRC		(BIT_MASK_22)
+#include <stddef.h>
+#include "diag/Trace.h"
+#include "../../../lib/src/Bits.h"
+#include "../../../lib/src/Bits.h"
+#include "../../../lib/src/RT_Debug.h"
+#include "../../../lib/src/stm32f407_Registers.h"
+#include "Rcc_int.h"
 
 
-#define MCO1_SRC_CLR_MASK	(BIT_MASK_CLEAR_21 | BIT_MASK_CLEAR_22)
-#define MCO1_PRE_CLR_MASK	(BIT_MASK_CLEAR_24 | BIT_MASK_CLEAR_25 | BIT_MASK_CLEAR_26)
-#define MCO2_SRC_CLR_MASK	(BIT_MASK_CLEAR_30 | BIT_MASK_CLEAR_31)
-#define MCO2_PRE_CLR_MASK   (BIT_MASK_CLEAR_27 | BIT_MASK_CLEAR_28 | BIT_MASK_CLEAR_29)
+// RCC Peripheral Base Address*************************************************************************
+#define 	Rcc						    ((volatile Rcc_t *)(uint32_t)0x40023800)
 
-#define RCC_IS_HSE_ON		(RCC->CR & BIT_MASK_17)
-#define RCC_IS_HSI_ON		(RCC->CR & BIT_MASK_1)
-#define RCC_IS_PLL_ON		(RCC->CR & BIT_MASK_25)
-#define RCC_IS_LSE_ON		(RCC->BDCR & BIT_MASK_1)
-#define RCC_IS_LSI_ON		(RCC->CSR & BIT_MASK_1)
+// RCC Clear Mask for SW  Bits*************************************************************************************************
+#define 	RCC_CFGR_SW_CLEAR 			(uint32_t)(~(BIT_0 | BIT_1))
+
+// RCC Clear Mask for MCO1 , MCO2 , MCO1PRE , MCO2PRE Bits*********************************************************************
+#define 	RCC_CFGR_MCO_1_CLEAR		(uint32_t)(~(BIT_21 | BIT_22))
+#define		RCC_CFGR_MCO_2_CLEAR		(uint32_t)(~(BIT_30 | BIT_31))
+#define 	RCC_CFGR_MCO1PRE_CLEAR      (uint32_t)(~(BIT_24 | BIT_25 | BIT_26))
+#define 	RCC_CFGR_MCO2PRE_CLEAR      (uint32_t)(~(BIT_27 | BIT_28 | BIT_29))
+
+// RCC Clear Mask for AHB_Peri , APB1_Peri , APB2_Peri Bits********************************************************************
+#define 	RCC_AHB_PRE_CLEAR			(uint32_t)(~(BIT_4 | BIT_5 | BIT_6 | BIT_7))
+#define 	RCC_APB1_PRE_CLEAR			(uint32_t)(~(BIT_10 | BIT_11 | BIT_12))
+#define 	RCC_APB2_PRE_CLEAR			(uint32_t)(~(BIT_13 | BIT_14 | BIT_15))
+
+// RCC Read Mask for AHB_Peri********************************************************************
+#define 	RCC_AHB_PRE_READ			(uint32_t)(BIT_4 | BIT_5 | BIT_6 | BIT_7)
+
+// RCC Read Mask for SWS Bits**************************************************************************************************
+#define 	RCC_CFGR_SWS				(uint32_t)(BIT_2 | BIT_3)
+
+// RCC Read Mask for HSI as System Clock***************************************************************************************
+#define 	RCC_SWS_HSI					BIT_CLR
+
+// RCC Read Mask for HSE as System Clock***************************************************************************************
+#define 	RCC_SWS_HSE					BIT_2
+
+// RCC Read Mask for PLL as System Clock***************************************************************************************
+#define 	RCC_SWS_PLL					BIT_3
+
+// RCC Read Mask for PLL Configuration Parameters******************************************************************************
+#define 	RCC_PLL_READ_M				(uint32_t)(BIT_0 | BIT_1 | BIT_2 | BIT_3 | BIT_4 | BIT_5)
+#define 	RCC_PLL_READ_N				(uint32_t)(BIT_6 | BIT_7 | BIT_8 | BIT_9 |BIT_10 | BIT_11 | BIT_12 | BIT_13 | BIT_14)
+#define 	RCC_PLL_READ_P				(uint32_t)(BIT_16 | BIT_17)
+#define 	RCC_PLL_READ_SRC			(uint32_t)(BIT_22)
+#define 	RCC_PLL_READ_Q				(uint32_t)(BIT_24 | BIT_25 | BIT_26 | BIT_27)
+
+// RCC Read Mask for Ready Flags of Systems Clocks*****************************************************************************
+#define		RCC_HSI_RDY 				BIT_1
+#define		RCC_HSE_RDY 				BIT_17
+#define		RCC_PLL_RDY 				BIT_25
+#define 	CLOCK_RDY_L					BIT_CLR
+
+#define 	RCC_AHB1_PERI__CLEAR_MASK  ((uint32_t)~BIT_13)
+#define 	RCC_AHB2_PERI__CLEAR_MASK  ((uint32_t)~BIT_24)
+#define 	RCC_AHB3_PERI__CLEAR_MASK  ((uint32_t)~(BIT_13 | BIT_24))
+#define 	RCC_APB1_PERI__CLEAR_MASK  ((uint32_t)~BIT_31)
+#define 	RCC_APB2_PERI__CLEAR_MASK  ((uint32_t)~(BIT_13 | BIT_31))
 
 
-#define RCC      ((volatile RCC_Reg_t *) RCC_BASE_ADDRESS)
-
-/* **************************************************************************************************************
- * Public Function: RCC_ControlClk
- * Input: a clock control macro --> RCC_HSI_ON,RCC_HSI_OFF,
- * 									RCC_HSE_ON,RCC_HSE_OFF,
- * 									RCC_PLL_ON,RCC_PLL_OFF,
- * 									RCC_LSI_ON,RCC_LSI_OFF,
- * 									RCC_LSE_ON,RCC_LSE_OFF
+/* Public Function: Rcc_SetClock_Status												   							*
+ * Description: This function is used to Enable and Disable Clocks
+ * Input parameters:
+ *					- clock		:	in range { RCC_CLOCK_xx }
+ * 					- status	:	in range { RCC_CLOCK_STATE_ENABLE -> RCC_CLOCK_STATE_DISABLE}
+ * Return:
+ * 					- Status (uint8_t)
+ * 					  RT_SUCCESS
+ *                    RT_PARAM
+ *                    RT_ERROR
+ *                    RT_TIME_OUT
  *
- * Output: the operation state --> RT_PARAM,
- * 								   RT_ERROR,
- * 								   RT_SUCCESS
- * */
-uint8_t RCC_ControlClk(uint32_t RCC_Clk_Ctrl){
+ * Input/Output Parameter:
+ * 					- Not Applicable
+ *
+ ****************************************************************************************************************/
+uint8_t Rcc_SetClock_Status( uint32_t clock, uint32_t status){
 
-	uint32_t RdyPintimeOut = 2500;
-	if( RCC_Clk_Ctrl == (RCC_HSI_ON) ||RCC_Clk_Ctrl == (RCC_HSE_ON) ||RCC_Clk_Ctrl == (RCC_PLL_ON) ){
-		/*set the selected bit with the use option on or off */
-		RCC ->CR |=  RCC_Clk_Ctrl;
-
-		/*should loop and wait on the RDY bit here using timer */
-		while( (RdyPintimeOut) && !(RCC->CR & (RCC_Clk_Ctrl << 1) ) ){
-			RdyPintimeOut--;
-		}
-		if(!RdyPintimeOut){
-			return RT_TIMEOUT;
-		}
-
-		return RT_SUCCESS;
-	}
-	else if( RCC_Clk_Ctrl == (RCC_HSI_OFF) ||RCC_Clk_Ctrl == (RCC_HSE_OFF) ||RCC_Clk_Ctrl == (RCC_PLL_OFF) ){
-		/*clear the selected bit */
-		RCC->CR &= RCC_Clk_Ctrl;
-
-		/*should loop and wait on the RDY bit here using timer  */
-		while( (RdyPintimeOut) && (RCC->CR & (~RCC_Clk_Ctrl << 1)) ){
-				RdyPintimeOut--;
+	uint32_t Time_out ;
+	if ( status == RCC_CLOCK_STATE_ENABLE){
+		Time_out =  0x000009C4 ;
+		if (clock == RCC_CLOCK_LSE ){
+			clock = (uint32_t)BIT_0 ;
+			(Rcc -> BDCR) |= clock ;
+			while ((Time_out) && ((Rcc -> BDCR & (clock << 1))) != (clock << 1)){  	 //Check if LSE Clock Ready Flage is High
+				Time_out-- ;
 			}
-
-			if(!RdyPintimeOut){
-				return RT_TIMEOUT;
+			if (!Time_out){
+				return RT_TIME_OUT ;
 			}
-
-		return RT_SUCCESS;
+		}
+		else if (clock == RCC_CLOCK_LSI){
+			clock = (uint32_t)BIT_0 ;
+			(Rcc -> CSR) |= clock ;
+			while ((Time_out) && ((Rcc -> CSR & (clock << 1)) != (clock << 1))){ 	//Check if LSI Clock Ready Flage is High
+				Time_out-- ;
+			}
+			if (!Time_out){
+				return RT_TIME_OUT ;
+			}
+		}
+		else if (clock == RCC_CLOCK_HSE || clock == RCC_CLOCK_HSI || clock == RCC_CLOCK_PLL ){
+			Rcc -> CR  |= clock ;
+			while ((Time_out) && ((Rcc -> CR & (clock << 1)) != (clock << 1))){ 	//Check if HSE or HSI or PLL  Clock Ready Flage is HIGH
+				Time_out-- ;
+			}
+			if (!Time_out){
+				return RT_TIME_OUT ;
+			}
+		}
+		else
+			return RT_PARAM ;
 	}
-	else if( RCC_Clk_Ctrl == (RCC_LSI_ON) ){
-		/*set the selected bit with the use option on or off */
-		RCC ->CSR |=  BIT_MASK_0;
-
-		/*should loop and wait on the RDY bit here using timer */
-		while( (RdyPintimeOut) && !(RCC->CSR & (BIT_MASK_0 << 1)) ){
-			RdyPintimeOut--;
+	else if( status == RCC_CLOCK_STATE_DISABLE ){
+		Time_out =  0x000007D0 ;
+		if (clock == RCC_CLOCK_LSE ){
+			clock = (uint32_t)BIT_0 ;
+			(Rcc -> BDCR) &= ~clock ;
+			while ((Time_out) && ((Rcc -> BDCR & (clock << 1))) != CLOCK_RDY_L){
+				Time_out-- ;
+			}
+			if (!Time_out){
+				return RT_TIME_OUT ;
+			}
 		}
-
-		if(!RdyPintimeOut){
-			return RT_TIMEOUT;
+		else if (clock == RCC_CLOCK_LSI){
+			clock = (uint32_t)BIT_0 ;
+			(Rcc -> CSR) &= ~clock ;
+			while ((Time_out) && ((Rcc -> CSR & (clock << 1)) != CLOCK_RDY_L)){
+				Time_out-- ;
+			}
+			if (!Time_out){
+				return RT_TIME_OUT ;
+			}
 		}
-
-		return RT_SUCCESS;
+		else if ((clock == RCC_CLOCK_HSE) || (clock == RCC_CLOCK_HSI) || (clock == RCC_CLOCK_PLL)){
+			Rcc -> CR  &= ~clock ;
+			while ((Time_out) && ((Rcc -> CR & (clock << 1)) != CLOCK_RDY_L)){
+				Time_out-- ;
+			}
+			if (!Time_out){
+				return RT_TIME_OUT ;
+			}
+		}
+		else
+			return RT_PARAM ;
 	}
-	else if( RCC_Clk_Ctrl == (RCC_LSI_OFF) ){
-		/*clear the selected bit */
-		RCC ->CSR &= BIT_MASK_CLEAR_0;
-
-		/*should loop and wait on the RDY bit here using timer */
-		while( (RdyPintimeOut) && (RCC->CSR & (~BIT_MASK_CLEAR_0 << 1)) ){
-			RdyPintimeOut--;
-		}
-
-		if(!RdyPintimeOut){
-			return RT_TIMEOUT;
-		}
-
-		return RT_SUCCESS;
-	}
-	else if( RCC_Clk_Ctrl == (RCC_LSE_ON) ){
-		/*set the selected bit with the use option on or off */
-		RCC ->BDCR |=  BIT_MASK_0;
-
-		/*should loop and wait on the RDY bit here using timer */
-		while( (RdyPintimeOut) && !(RCC->BDCR & (BIT_MASK_0 << 1) ) ){
-			RdyPintimeOut--;
-		}
-
-		if(!RdyPintimeOut){
-			return RT_TIMEOUT;
-		}
-
-		return RT_SUCCESS;
-	}
-	else if(RCC_Clk_Ctrl == (RCC_LSE_OFF) ){
-		/*clear the selected bit */
-		RCC ->BDCR &= BIT_MASK_CLEAR_0;
-
-		/*should loop and wait on the RDY bit here using timer */
-		while( (RdyPintimeOut) && (RCC->BDCR & (~BIT_MASK_CLEAR_0 << 1) ) ){
-			RdyPintimeOut--;
-		}
-
-		if(!RdyPintimeOut){
-			return RT_TIMEOUT;
-		}
-
-		return RT_SUCCESS;
-	}
-	return RT_PARAM;
+	else
+		return RT_PARAM ;
+	return RT_SUCCESS ;
 }
 
-/* **************************************************************************************************************
- * Public Function: RCC_SelectSysClk
- * Description: This function is used to Select a System clock from the provided RCC clocks
- * Input Parameters:
- * 					-uint32_t RCC_Clk_Ctrl : in range { RCC_HSI,
- *                                                      RCC_HSE,
- *			                                            RCC_PLL }
+/* Public Function: Rcc_AHB1_PeriClockStatus										   							*
+ * Description: This function is used to Enable and Disable AHB1 Preipherals Clocks
+ * Input parameters:
+ *					- clock		:	in range { AHB1_PERI_CLOCK_xx }
+ * 					- status	:	in range { RCC_PERI_CLOCK_ENABLE -> RCC_PERI_CLOCK_DISABLE}
  *
+ * Return:
+ * 					- Status (uint8_t)
+ *                    RT_SUCCESS
+ *                    RT_PARAM
+ *                    RT_ERROR
+ *                    RT_TIME_OUT
  *
- * Return:           -uint8_t : in range {  RT_PARAM,
- *											RT_ERROR,
- *											RT_SUCCESS }
+ * Input/Output Parameter:
+ * 					- Not Applicable
  *
- *
- * Input/Output Parameters:
- * 					-Not Applicable (void)
- * ***************************************************************************************************************/
-uint8_t RCC_SelectSysClk(uint32_t RCC_Clk){
-	if( 	RCC_Clk != RCC_PLL &&
-			RCC_Clk != RCC_HSE &&
-			RCC_Clk != RCC_HSI){
-		return RT_PARAM;
-	}
-	RCC ->CFGR &= SW_CLEAR;
-	RCC ->CFGR |= RCC_Clk;
+ *****************************************************************************************************************/
+uint8_t Rcc_AHB1_PeriClockStatus(uint64_t peri ,uint32_t status){
 
-	/*loop to make sure that SWS are set correctly */
-	if((RCC ->CFGR & SWS_MASK ) != (RCC_Clk << 2) ){
-		return RT_ERROR;
-	}
-
-	return RT_SUCCESS;
-}
-
-/* **************************************************************************************************************
- * Public Function: RCC_ConfigPll
- * Description: This function is used to configure the PLL clock
- * Input Parameters:
- * 					-uint32_t RCC_Clk_Ctrl : in range { RCC_pllConfig_t }
- *
- * Return:           -uint8_t : in range {  RT_PARAM,
- *											RT_ERROR,
- *											RT_SUCCESS }
- *
- *
- * Input/Output Parameters:
- * 					-Not Applicable (void)
- * ***************************************************************************************************************/
-uint8_t RCC_ConfigPll(RCC_pllConfig_t * RCC_PllConfig){
-
-	uint32_t pll_CFGR =0 ;
-
-	/*Fixed a bug here: when using != in two conditions on the same variable
-	 * use && between them not ||  */
-	if(		RCC_PllConfig == NULL ||RCC_PllConfig->pll_M > 63 || RCC_PllConfig->pll_M < 2  ||
-			RCC_PllConfig->pll_N > 432|| RCC_PllConfig->pll_N < 50 ||
-			(RCC_PllConfig->pll_P != 2  && RCC_PllConfig->pll_P != 4  &&
-					RCC_PllConfig->pll_P != 6  && RCC_PllConfig->pll_P != 8 ) ||
-					RCC_PllConfig->pll_Q > 15  || RCC_PllConfig->pll_Q < 2    ||
-					(RCC_PllConfig->pll_Src != RCC_PLL_SRC_HSE &&
-							RCC_PllConfig->pll_Src != RCC_PLL_SRC_HSI )
-	)
-	{
-		return RT_PARAM;
-	}
-	if(RCC->CR & PLL_RDY_MASK){
-		return RT_ERROR;
-	}
-	if( RCC_PllConfig->pll_Src == RCC_PLL_SRC_HSE && (RCC_PllConfig->pll_M != (RCC_HSE_OSC/2) && RCC_PllConfig->pll_M != RCC_HSE_OSC)){
-		return RT_ERROR;
-	}
-	else if(RCC_PllConfig->pll_Src == RCC_PLL_SRC_HSI && (RCC_PllConfig->pll_M != RCC_HSI_OSC/2 && RCC_PllConfig->pll_M != RCC_HSI_OSC)){
-		return RT_ERROR;
-	}
+	if ((( peri & RCC_AHB1_PERI_MASK ) == RCC_AHB1_PERI_MASK )			//Check if user enter vaild AHB1 Peripheral and not Peripheral of other Buses
+			&& (( peri & RCC_AHB2_PERI_MASK ) != RCC_AHB2_PERI_MASK )
+			&& (( peri & RCC_AHB3_PERI_MASK ) != RCC_AHB3_PERI_MASK )
+			&& (( peri & RCC_APB1_PERI_MASK ) != RCC_APB1_PERI_MASK )
+			&& (( peri & RCC_APB2_PERI_MASK ) != RCC_APB2_PERI_MASK ) ){
 
 
-	pll_CFGR  = RCC_PllConfig -> pll_M;
-	pll_CFGR |= RCC_PllConfig -> pll_N   << 6;
-	pll_CFGR |= RCC_PllConfig -> pll_P   << 16;
-	pll_CFGR |= RCC_PllConfig -> pll_Q   << 24;
-	pll_CFGR |= RCC_PllConfig -> pll_Src << 22;
-	//pll_CFGR |= (1 << 29);		//the reserved bit value
-	RCC -> PLLCFGR = pll_CFGR;
-	return RT_SUCCESS;
-}
+		switch (status){
+		case RCC_PERI_CLOCK_ENABLE :
+			Rcc -> AHB1ENR |= (uint32_t)peri;
+			break;
 
-/* **************************************************************************************************************
- * Public Function: RCC_GetCurrentSysClkFreq
- * Description: This function is used to get the current running System clock frequency
- * Input Parameters:
- * 					-Not Applicable (void)
- *
- *
- * Return:           -uint8_t : in range {  RT_PARAM,
- *											RT_ERROR,
- *											RT_SUCCESS }
- *
- *
- * Input/Output Parameters:
- * 					- uint32_t* : CurrentSysClkFreq
- * ***************************************************************************************************************/
-uint8_t RCC_GetCurrentSysClkFreq(uint32_t* CurrentSysClkFreq){
-	volatile uint32_t SystemClkType;
-	SystemClkType = (RCC->CFGR & SWS_MASK) >> 2;
-	if(SystemClkType == RCC_HSI){
-		*CurrentSysClkFreq = RCC_HSI_OSC;
-	}
-	else if(SystemClkType == RCC_HSE){
-		*CurrentSysClkFreq = RCC_HSE_OSC;
-	}
-	else if (SystemClkType == RCC_PLL){
-		volatile RCC_pllConfig_t RCC_PllConfig;
-		volatile uint32_t pllcfg_reg;
-		pllcfg_reg = RCC ->PLLCFGR;
-		RCC_PllConfig.pll_M =    pllcfg_reg & PLL_MASK_M;
-		RCC_PllConfig.pll_N =   (pllcfg_reg & PLL_MASK_N  ) >> PLL_SHIFT_N_POS    ;
-		RCC_PllConfig.pll_P =   (pllcfg_reg & PLL_MASK_P  ) >> PLL_SHIFT_P_POS    ;
-//		RCC_PllConfig.pll_Q =   (pllcfg_reg & PLL_MASK_Q  ) >> PLL_SHIFT_Q_POS    ;
-		RCC_PllConfig.pll_Src = (pllcfg_reg & PLL_MASK_SRC) >> PLL_SHIFT_SRC_POS  ;
-
-		if(RCC_PllConfig.pll_Src == RCC_PLL_SRC_HSE ){
-			*CurrentSysClkFreq = ( ( (RCC_HSE_OSC*RCC_PllConfig.pll_N)/RCC_PllConfig.pll_M)/(RCC_PllConfig.pll_P * (uint32_t )2 + (uint32_t ) 2));
-		}
-		else if(RCC_PllConfig.pll_Src == RCC_PLL_SRC_HSI ){
-			*CurrentSysClkFreq = ( ( (RCC_HSI_OSC*RCC_PllConfig.pll_N)/RCC_PllConfig.pll_M)/(RCC_PllConfig.pll_P * (uint32_t )2 + (uint32_t )2));
-		}
-	}
-	return RT_SUCCESS;
-}
-
-/* **************************************************************************************************************
- * Public Function: RCC_SetMCOClk
- * Description: This function is used to configure the MCO Clock ,its prescalar and source clock from the provided RCC clocks
- * Input Parameters:
- * 					 -RCC_mcoConfig_t* : RCC_mcoConfig.
- *
- *
- * Return:           -uint8_t : in range {  RT_PARAM,
- *											RT_ERROR,
- *											RT_SUCCESS }
- *
- *
- * Input/Output Parameters:
- * 					-Not Applicable (void)
- * ***************************************************************************************************************/
-uint8_t RCC_SetMCOClk(RCC_mcoConfig_t* RCC_mcoConfig ){
-	if(RCC_mcoConfig == NULL){
-		return RT_PARAM;
-	}
-	/*if MCO1 configuration is selected */
-	if(RCC_mcoConfig -> mco_config == RCC_MCO1_Config || RCC_mcoConfig -> mco_config == RCC_MCO1_AND_MCO2_Config)
-	{
-		/*validation the source and prescalar of MCO1*/
-		if(
-				(
-						RCC_mcoConfig->mco1_src !=RCC_MCO1_SRC_HSI &&
-						RCC_mcoConfig->mco1_src !=RCC_MCO1_SRC_HSE &&
-						RCC_mcoConfig->mco1_src !=RCC_MCO1_SRC_PLL &&
-						RCC_mcoConfig->mco1_src !=RCC_MCO1_SRC_LSE
-				)
-				||
-				(
-						RCC_mcoConfig->mco1_pre != RCC_MCO1_NO_PRE     &&
-						RCC_mcoConfig->mco1_pre != RCC_MCO1_PRE_DIV_2  &&
-						RCC_mcoConfig->mco1_pre != RCC_MCO1_PRE_DIV_3  &&
-						RCC_mcoConfig->mco1_pre != RCC_MCO1_PRE_DIV_4  &&
-						RCC_mcoConfig->mco1_pre != RCC_MCO1_PRE_DIV_5
-				)
-		)
-		{
+		case RCC_PERI_CLOCK_DISABLE :
+			Rcc -> AHB1ENR &= ~((uint32_t)peri) ;
+			break;
+		default:
 			return RT_PARAM;
 		}
-
-		RCC -> CFGR &= (MCO1_PRE_CLR_MASK & MCO1_SRC_CLR_MASK);
-		RCC -> CFGR |= (RCC_mcoConfig ->mco1_pre | RCC_mcoConfig ->mco1_src);
 	}
-	/*if MCO2 configuration is selected */
-	if(RCC_mcoConfig -> mco_config == RCC_MCO2_Config || RCC_mcoConfig -> mco_config == RCC_MCO1_AND_MCO2_Config)
-	{
-		/*validation the source and prescalar of MCO2*/
-		if(
-				(
-						RCC_mcoConfig->mco2_src !=RCC_MCO2_SRC_SYSCLK &&
-						RCC_mcoConfig->mco2_src !=RCC_MCO2_SRC_HSE &&
-						RCC_mcoConfig->mco2_src !=RCC_MCO2_SRC_PLL &&
-						RCC_mcoConfig->mco2_src !=RCC_MCO2_SRC_PLLI2S
-				)
-				||
-				(
-						RCC_mcoConfig->mco2_pre != RCC_MCO2_NO_PRE     &&
-						RCC_mcoConfig->mco2_pre != RCC_MCO2_PRE_DIV_2  &&
-						RCC_mcoConfig->mco2_pre != RCC_MCO2_PRE_DIV_3  &&
-						RCC_mcoConfig->mco2_pre != RCC_MCO2_PRE_DIV_4  &&
-						RCC_mcoConfig->mco2_pre != RCC_MCO2_PRE_DIV_5)
-		)
-		{
+	else
+		return RT_PARAM;
+
+	return RT_SUCCESS ;
+}
+
+/* Public Function: Rcc_AHB2_PeriClockStatus											     				     *
+ * Description: This function is used to Enable and Disable AHB2 Preipherals Clocks
+ * Input parameters:
+ *					- clock		:	in range { AHB2_PERI_CLOCK_xx }
+ * 					- status	:	in range { RCC_PERI_CLOCK_ENABLE -> RCC_PERI_CLOCK_DISABLE}
+ *
+ * Return:
+ * 					- Status (uint8_t)
+ *                    RT_SUCCESS
+ *                    RT_PARAM
+ *                    RT_ERROR
+ *                    RT_TIME_OUT
+ *
+ * Input/Output Parameter:
+ * 					- Not Applicable
+ *
+ ******************************************************************************************************************/
+uint8_t Rcc_AHB2_PeriClockStatus(uint64_t peri, uint32_t status){
+
+	if ((( peri & RCC_AHB2_PERI_MASK ) == RCC_AHB2_PERI_MASK )			//Check if user enter vaild AHB2 Peripheral and not Peripheral of other Buses
+			&& (( peri & RCC_AHB1_PERI_MASK ) != RCC_AHB1_PERI_MASK )
+			&& (( peri & RCC_AHB3_PERI_MASK ) != RCC_AHB3_PERI_MASK )
+			&& (( peri & RCC_APB1_PERI_MASK ) != RCC_APB1_PERI_MASK )
+			&& (( peri & RCC_APB2_PERI_MASK ) != RCC_APB2_PERI_MASK ) ){
+
+		switch (status){
+		case RCC_PERI_CLOCK_ENABLE :
+			Rcc -> AHB2ENR |= (uint32_t)peri;
+			break;
+
+		case RCC_PERI_CLOCK_DISABLE :
+			Rcc -> AHB2ENR &= ~((uint32_t)peri) ;
+			break;
+		default:
 			return RT_PARAM;
 		}
-		RCC -> CFGR &= (MCO2_PRE_CLR_MASK & MCO2_SRC_CLR_MASK);
-		RCC -> CFGR |= (RCC_mcoConfig ->mco2_pre | RCC_mcoConfig ->mco2_src);
 	}
-	return RT_SUCCESS;
+	else
+		return RT_PARAM;
+
+	return RT_SUCCESS ;
 }
 
-/* **************************************************************************************************************
- * Public Function: RCC_ControlAHB1PeriClk
- * Description: This function is used to Control the peripherals connected on AHB1 Bus.
- * Input Parameters:
- * 					-uint32_t RCC_AHB1Perph :in range { RCC_AHB1_PREPH_GPIOA
- *                                                      RCC_AHB1_PREPH_GPIOB
- *			                                            RCC_AHB1_PREPH_GPIOC
- *                                                      RCC_AHB1_PREPH_GPIOD
- *                                                      RCC_AHB1_PREPH_GPIOE
- *                                                      RCC_AHB1_PREPH_GPIOF
- *                                                      RCC_AHB1_PREPH_GPIOG
- *                                                      RCC_AHB1_PREPH_GPIOH
- *                                                      RCC_AHB1_PREPH_GPIOI
- *                                                      RCC_AHB1_PREPH_CRC
- *                                                      RCC_AHB1_PREPH_BKPSRAM
- *                                                      RCC_AHB1_PREPH_CCMDATARAM
- *                                                      RCC_AHB1_PREPH_DMA1
- *                                                      RCC_AHB1_PREPH_DMA2
- *                                                      RCC_AHB1_PREPH_ETHMAC
- *                                                      RCC_AHB1_PREPH_ETHMACTEX
- *                                                      RCC_AHB1_PREPH_ETHMACRX
- *                                                      RCC_AHB1_PREPH_ETHMACPTP
- *                                                      RCC_AHB1_PREPH_OTGHS
- *                                                      RCC_AHB1_PREPH_OTGHSULPI }
+/* Public Function: Rcc_AHB3_PeriClockStatus										   							   *
+ * Description: This function is used to Enable and Disable AHB3 Preipherals Clocks
+ * Input parameters:
+ *					- clock		:	in range { AHB3_PERI_CLOCK_xx }
+ * 					- status	:	in range { RCC_PERI_CLOCK_ENABLE -> RCC_PERI_CLOCK_DISABLE}
  *
- *					 -uint8_t Status        :in range { RCC_PREPH_ENABLE
- *					                                    RCC_PREPH_DISABLE }
+ * Return:
+ * 					- Status (uint8_t)
+ *                    RT_SUCCESS
+ *                    RT_PARAM
+ *                    RT_ERROR
+ *                    RT_TIME_OUT
  *
+ * Input/Output Parameter:
+ * 					- Not Applicable
  *
- *
- * Return:           -uint8_t : in range {  RT_PARAM,
- *											RT_ERROR,
- *											RT_SUCCESS }
- *
- *
- * Input/Output Parameters:
- * 					-Not Applicable (void)
- * ***************************************************************************************************************/
-/*
- * here we could have used reserved bits to differentiate between RCC_AHB1_peris and
- * the rest of buses peripherals because they have values in macros,
- * so to validate that the user entered the correct macro use reserved bits
- * */
-uint8_t RCC_ControlAHB1PeriClk(uint32_t RCC_AHB1_Perph,uint8_t Status){
-	if(
-			(
-					(RCC_AHB1_Perph != RCC_AHB1_PREPH_GPIOA     )&&
-					(RCC_AHB1_Perph != RCC_AHB1_PREPH_GPIOB		)&&
-					(RCC_AHB1_Perph != RCC_AHB1_PREPH_GPIOC		)&&
-					(RCC_AHB1_Perph != RCC_AHB1_PREPH_GPIOD		)&&
-					(RCC_AHB1_Perph != RCC_AHB1_PREPH_GPIOE		)&&
-					(RCC_AHB1_Perph != RCC_AHB1_PREPH_GPIOF		)&&
-					(RCC_AHB1_Perph != RCC_AHB1_PREPH_GPIOG		)&&
-					(RCC_AHB1_Perph != RCC_AHB1_PREPH_GPIOH		)&&
-					(RCC_AHB1_Perph != RCC_AHB1_PREPH_GPIOI		)&&
-					(RCC_AHB1_Perph != RCC_AHB1_PREPH_CRC		)&&
-					(RCC_AHB1_Perph != RCC_AHB1_PREPH_BKPSRAM	)&&
-					(RCC_AHB1_Perph != RCC_AHB1_PREPH_CCMDATARAM)&&
-					(RCC_AHB1_Perph != RCC_AHB1_PREPH_DMA1		)&&
-					(RCC_AHB1_Perph != RCC_AHB1_PREPH_DMA2		)&&
-					(RCC_AHB1_Perph != RCC_AHB1_PREPH_ETHMAC	)&&
-					(RCC_AHB1_Perph != RCC_AHB1_PREPH_ETHMACTEX	)&&
-					(RCC_AHB1_Perph != RCC_AHB1_PREPH_ETHMACRX	)&&
-					(RCC_AHB1_Perph != RCC_AHB1_PREPH_ETHMACPTP	)&&
-					(RCC_AHB1_Perph != RCC_AHB1_PREPH_OTGHS		)&&
-					(RCC_AHB1_Perph != RCC_AHB1_PREPH_OTGHSULPI	)
-			)||
-			(Status != RCC_PREPH_ENABLE && Status != RCC_PREPH_DISABLE)
-	)
-	{
+ ******************************************************************************************************************/
+uint8_t Rcc_AHB3_PeriClockStatus(uint64_t peri ,uint32_t status){
+
+	if ((( peri & RCC_AHB3_PERI_MASK ) == RCC_AHB3_PERI_MASK )			//Check if user enter vaild AHB3 Peripheral and not Peripheral of other Buses
+			&& (( peri & RCC_AHB1_PERI_MASK ) != RCC_AHB1_PERI_MASK )
+			&& (( peri & RCC_AHB2_PERI_MASK ) != RCC_AHB2_PERI_MASK )
+			&& (( peri & RCC_APB1_PERI_MASK ) != RCC_APB1_PERI_MASK )
+			&& (( peri & RCC_APB2_PERI_MASK ) != RCC_APB2_PERI_MASK ) ){
+
+
+		switch (status){
+		case RCC_PERI_CLOCK_ENABLE :
+			Rcc -> AHB3ENR |= (uint32_t)peri;
+			break;
+
+		case RCC_PERI_CLOCK_DISABLE :
+			Rcc -> AHB3ENR &= ~((uint32_t)peri) ;
+			break;
+		default:
+			return RT_PARAM;
+		}
+	}
+	else
 		return RT_PARAM;
+
+	return RT_SUCCESS ;
+}
+
+/* Public Function: Rcc_APB1_PeriClockStatus																       *
+ * Description: This function is used to Enable and Disable APB1 Preipherals Clocks
+ * Input parameters:
+ *					- clock		:	in range { APB1_PERI_CLOCK_xx }
+ * 					- status	:	in range { RCC_PERI_CLOCK_ENABLE -> RCC_PERI_CLOCK_DISABLE}
+ *
+ * Return:
+ * 					- Status (uint8_t)
+ *                    RT_SUCCESS
+ *                    RT_PARAM
+ *                    RT_ERROR
+ *                    RT_TIME_OUT
+ *
+ * Input/Output Parameter:
+ * 					- Not Applicable
+ *
+ ********************************************************************************************************************/
+uint8_t Rcc_APB1_PeriClockStatus(uint64_t peri ,uint32_t status){
+
+	if ((( peri & RCC_APB1_PERI_MASK ) == RCC_APB1_PERI_MASK )			//Check if user enter vaild APB1 Peripheral and not Peripheral of other Buses
+			&& (( peri & RCC_AHB1_PERI_MASK ) != RCC_AHB1_PERI_MASK )
+			&& (( peri & RCC_AHB2_PERI_MASK ) != RCC_AHB2_PERI_MASK )
+			&& (( peri & RCC_AHB3_PERI_MASK ) != RCC_AHB3_PERI_MASK )
+			&& (( peri & RCC_APB2_PERI_MASK ) != RCC_APB2_PERI_MASK ) ){
+
+		switch (status){
+		case RCC_PERI_CLOCK_ENABLE :
+			Rcc -> APB1ENR |= (uint32_t)peri;
+			break;
+
+		case RCC_PERI_CLOCK_DISABLE :
+			Rcc -> APB1ENR &= ~((uint32_t)peri) ;
+			break;
+		default:
+			return RT_PARAM;
+		}
+	}
+	else
+		return RT_PARAM;
+
+	return RT_SUCCESS ;
+}
+
+/* Public Function: Rcc_APB2_PeriClockStatus										   								*
+ * Description: This function is used to Enable and Disable APB2 Preipherals Clocks
+ * Input parameters:
+ *					- clock		:	in range { APB2_PERI_CLOCK_xx }
+ * 					- status	:	in range { RCC_PERI_CLOCK_ENABLE -> RCC_PERI_CLOCK_DISABLE}
+ *
+ * Return:
+ * 					- Status (uint8_t)
+ *                    RT_SUCCESS
+ *                    RT_PARAM
+ *                    RT_ERROR
+ *                    RT_TIME_OUT
+ *
+ * Input/Output Parameter:
+ * 					- Not Applicable
+ *
+ *********************************************************************************************************************/
+uint8_t Rcc_APB2_PeriClockStatus(uint64_t peri ,uint32_t status){
+
+	if ((( peri & RCC_APB2_PERI_MASK ) == RCC_APB2_PERI_MASK )				//Check if user enter vaild APB2 Peripheral and not Peripheral of other Buses
+			&& (( peri & RCC_AHB1_PERI_MASK ) != RCC_AHB1_PERI_MASK )
+			&& (( peri & RCC_AHB2_PERI_MASK ) != RCC_AHB2_PERI_MASK )
+			&& (( peri & RCC_AHB3_PERI_MASK ) != RCC_AHB3_PERI_MASK )
+			&& (( peri & RCC_APB1_PERI_MASK ) != RCC_APB1_PERI_MASK ) ){
+
+
+		switch (status){
+		case RCC_PERI_CLOCK_ENABLE :
+			Rcc -> APB2ENR |= (uint32_t)peri;
+			break;
+
+		case RCC_PERI_CLOCK_DISABLE :
+			Rcc -> APB2ENR &= ~((uint32_t)peri) ;
+			break;
+		default:
+			return RT_PARAM;
+		}
+	}
+	else
+		return RT_PARAM;
+
+	return RT_SUCCESS ;
+}
+
+/* Public Function:  RCC_SelectSysClk												   								  *
+ * Description: This function is used to Select System clock
+ * Input parameters:
+ * 					- sysclk	:	in range {  RCC_SYS_CLK_xx }
+ *
+ * Return:
+ * 					- Status (uint8_t)
+ *                    RT_SUCCESS
+ *                    RT_PARAM
+ *                    RT_ERROR
+ *                    RT_TIME_OUT
+ *
+ * Input/Output Parameter:
+ * 					- Not Applicable
+ *
+ **********************************************************************************************************************/
+uint8_t Rcc_SelectSysClk(uint32_t sysclk){
+	switch(sysclk) {
+	case RCC_SYS_CLK_HSE :
+		if ((Rcc -> CR & RCC_HSE_RDY) != RCC_HSE_RDY){			//Check if HSE Clock Ready Flage is high
+			return RT_ERROR ;
+		}
+		break;
+	case RCC_SYS_CLK_HSI :
+		if ((Rcc -> CR & RCC_HSI_RDY) != RCC_HSI_RDY){			//Check if HSI Clock Ready Flage is high
+			return RT_ERROR ;
+		}
+		break;
+	case RCC_SYS_CLK_PLL :
+		if ((Rcc -> CR & RCC_PLL_RDY) != RCC_PLL_RDY){			//Check if PLL Clock Ready Flage is high
+			return RT_ERROR ;
+		}
+		break;
+	default:
+		return RT_PARAM ;
+	}
+	uint32_t  current_clk ;
+	uint32_t CFGR_local = Rcc -> CFGR ;
+	CFGR_local &= RCC_CFGR_SW_CLEAR ;
+	CFGR_local |= sysclk ;
+	Rcc -> CFGR = CFGR_local;
+	current_clk = Rcc -> CFGR & RCC_CFGR_SWS ;
+	if (sysclk != (current_clk >> 2)){
+		return RT_ERROR ;
 	}
 
-	if(Status == RCC_PREPH_ENABLE){
-		RCC -> AHB1ENR |= RCC_AHB1_Perph;
+	return RT_SUCCESS ;
+}
+
+/* Public Function:  RCC_ConfigurePLL																				   *
+ * Description: This function is used to Configure PLL Parameters
+ * Input parameters:
+ * 					- Object of (PLLcfg_t)
+ * Options:
+ * 					- pllcfg.PLL_M    :  in range : { 2  ->  63 }
+ * 					- pllcfg.PLL_N    :  in range : { 50  -> 432 }
+ * 					- pllcfg.PLL_P    :  in range : { RCC_PLL_P_xx  (xx : {2, 4, 6, 8}) }
+ * 					- pllcfg.PLL_src  :  in range : { RCC_PLL_SRC_HSI -> RCC_PLL_SRC_HSE }
+ * 					- pllcfg.PLL_Q	  :  in range : { 2  -> 15 }
+ *
+ * Return:
+ * 					- Status (uint8_t)
+ *                    RT_SUCCESS
+ *                    RT_PARAM
+ *                    RT_ERROR
+ *                    RT_TIME_OUT
+ *
+ * Input/Output Parameter:
+ * 					- Not Applicable
+ *
+ ***********************************************************************************************************************/
+uint8_t	Rcc_ConfigurePLL(PLLcfg_t *pllcfg)
+{
+	if ( ( Rcc -> CR & RCC_PLL_RDY ) == CLOCK_RDY_L ){			//Check if PLL Clock Ready Flage is Low
+
+		if (pllcfg != NULL){									//Check if Passing valid address
+
+			uint32_t Freq_out ;
+			switch (pllcfg -> PLL_src){
+			case RCC_PLL_SRC_HSI :
+				Freq_out = ((RCC_HSI_CLOCK_FREQ / (uint32_t)1000000 / pllcfg -> PLL_M) * pllcfg -> PLL_N) / pllcfg -> PLL_P ;
+				if (Freq_out > (uint32_t)168)					//Check that Output Frequancy of PLL does not exceed 168 MHz
+				{
+					return RT_ERROR;
+				}
+				break;
+			case RCC_PLL_SRC_HSE :
+				Freq_out = ((RCC_HSE_CLOCK_FREQ / (uint32_t)1000000 / pllcfg -> PLL_M) * pllcfg -> PLL_N) / pllcfg -> PLL_P ;
+				if (Freq_out > (uint32_t)168)					//Check that Output Frequancy of PLL does not exceed 168 MHz
+				{
+					return RT_ERROR;
+				}
+				break;
+			default:
+				return RT_PARAM;
+			}
+
+			uint32_t PLLCFGR_local = Rcc -> PLLCFGR ;
+
+			if (pllcfg -> PLL_N >= (uint32_t)50 && pllcfg -> PLL_N <= (uint32_t)216){
+				PLLCFGR_local &=  ~RCC_PLL_READ_N ;
+				PLLCFGR_local |= pllcfg -> PLL_N << 6 ;
+			}
+			else
+				return RT_PARAM;
+
+			if (pllcfg -> PLL_P == (uint32_t)2 || pllcfg -> PLL_P == (uint32_t)4 || pllcfg -> PLL_P == (uint32_t)6 || pllcfg -> PLL_P == (uint32_t)8){
+				PLLCFGR_local &=  ~RCC_PLL_READ_P ;
+				PLLCFGR_local |= pllcfg -> PLL_P << 16 ;
+			}
+			else
+				return RT_PARAM;
+
+			if (pllcfg -> PLL_src == RCC_PLL_SRC_HSI|| pllcfg -> PLL_src == RCC_PLL_SRC_HSE){
+				PLLCFGR_local &=  ~RCC_PLL_READ_SRC ;
+				PLLCFGR_local |= pllcfg -> PLL_src << 22 ;
+			}
+			else
+				return RT_PARAM;
+
+			if ( (Rcc -> PLLCFGR & (pllcfg -> PLL_src << 22)) == RCC_PLL_SRC_HSI ){
+
+				if (pllcfg -> PLL_M == (uint32_t)8 ){
+					PLLCFGR_local &=  ~RCC_PLL_READ_M ;
+					PLLCFGR_local |= pllcfg -> PLL_M ;
+				}
+				else
+					return RT_PARAM;
+			}
+			else {
+				if (pllcfg -> PLL_M == (RCC_HSE_CLOCK_FREQ / (uint32_t)1000000 / (uint32_t)2)){
+					PLLCFGR_local &=  ~RCC_PLL_READ_M ;
+					PLLCFGR_local |= pllcfg -> PLL_M ;
+				}
+				else
+					return RT_PARAM;
+			}
+
+			if (pllcfg -> PLL_Q >= (uint32_t)2 && pllcfg -> PLL_Q <= (uint32_t)15){
+				PLLCFGR_local &=  ~RCC_PLL_READ_Q ;
+				PLLCFGR_local |= pllcfg -> PLL_Q << 24 ;
+			}
+			else
+				return RT_PARAM;
+
+			Rcc -> PLLCFGR = PLLCFGR_local ;
+			if (Rcc -> PLLCFGR != PLLCFGR_local){					//CHECK If Configurations Parameters Have been written on PLLCFGR Register
+				return RT_ERROR ;
+			}
+
+		}
+		else {
+			return RT_PARAM;
+		}
 	}
 	else {
-		RCC -> AHB1ENR &= ~RCC_AHB1_Perph;
-	}
-
-	return RT_SUCCESS;
-}
-
-/* **************************************************************************************************************
- * Public Function: RCC_ControlAHB2PeriClk
- * Description: This function is used to Control the peripherals connected on AHB2 Bus.
- * Input Parameters:
- * 					-uint32_t RCC_AHB2Perph : in range { RCC_AHB2_PREPH_DCMI
- *                                                      RCC_AHB2_PREPH_CRYP
- *			                                            RCC_AHB2_PREPH_HASH
- *                                                      RCC_AHB2_PREPH_RNG
- *                                                      RCC_AHB2_PREPH_OTGFS }
- *
- *
- * 					-uint8_t Status        :in range {  RCC_PREPH_ENABLE,
- *					                                    RCC_PREPH_DISABLE }
- *
- * Return:           -uint8_t : in range {  RT_PARAM,
- *											RT_ERROR,
- *											RT_SUCCESS }
- *
- *
- * Input/Output Parameters:
- * 					-Not Applicable (void)
- * ***************************************************************************************************************/
-uint8_t RCC_ControlAHB2PeriClk(uint32_t RCC_AHB2_Perph,uint8_t Status){
-	if(
-			(
-					(RCC_AHB2_Perph != RCC_AHB2_PREPH_CRYP )&&
-					(RCC_AHB2_Perph != RCC_AHB2_PREPH_DCMI	)&&
-					(RCC_AHB2_Perph != RCC_AHB2_PREPH_HASH	)&&
-					(RCC_AHB2_Perph != RCC_AHB2_PREPH_OTGFS	)&&
-					(RCC_AHB2_Perph != RCC_AHB2_PREPH_RNG	)
-			)||
-			(Status != RCC_PREPH_ENABLE && Status != RCC_PREPH_DISABLE)
-	)
-	{
-		return RT_PARAM;
-	}
-
-	if(Status == RCC_PREPH_ENABLE){
-		RCC -> AHB2ENR |= RCC_AHB2_Perph;
-	}
-	else {
-		RCC -> AHB2ENR &= ~RCC_AHB2_Perph;
-	}
-	return RT_SUCCESS;
-}
-
-/* **************************************************************************************************************
- * Public Function: RCC_ControlAHB3PeriClk
- * Description: This function is used to Control the peripherals connected on AHB3 Bus.
- * Input Parameters:
- * 					-uint32_t RCC_AHB3Perph : in range { RCC_AHB3_PREPH_FSMCEN
- *                                                      }
- *
- *
- * 					-uint8_t Status        :in range {  RCC_PREPH_ENABLE,
- *					                                    RCC_PREPH_DISABLE }
- *
- * Return:           -uint8_t : in range {  RT_PARAM,
- *											RT_ERROR,
- *											RT_SUCCESS }
- *
- *
- * Input/Output Parameters:
- * 					-Not Applicable (void)
- * ***************************************************************************************************************/
-uint8_t RCC_ControlAHB3PeriClk(uint32_t RCC_AHB3_Perph,uint8_t Status){
-	if(
-			(RCC_AHB3_Perph != RCC_AHB3_PREPH_FSMCEN )||
-			(Status != RCC_PREPH_DISABLE && Status != RCC_PREPH_ENABLE)
-	)
-	{
-		return RT_PARAM;
-	}
-	if(Status == RCC_PREPH_ENABLE){
-		RCC ->AHB3ENR |= RCC_AHB3_Perph;
-	}
-	else {
-		RCC ->AHB3ENR &= ~RCC_AHB3_Perph;
-	}
-	return RT_SUCCESS;
-}
-
-/* **************************************************************************************************************
- * Public Function: RCC_ControlAPB1PeriClk
- * Description: This function is used to Control the peripherals connected on APB1 Bus.
- * Input Parameters:
- * 					-uint32_t RCC_APB1Perph : in range {RCC_APB1_PREPH_TIM2
- *                                                      RCC_APB1_PREPH_TIM3
- *			                                            RCC_APB1_PREPH_TIM4
- *                                                      RCC_APB1_PREPH_TIM5
- *                                                      RCC_APB1_PREPH_TIM6
- *                                                      RCC_APB1_PREPH_TIM7
- *                                                      RCC_APB1_PREPH_TIM12
- *                                                      RCC_APB1_PREPH_TIM13
- *                                                      RCC_APB1_PREPH_TIM14
- *                                                      RCC_APB1_PREPH_WWDG
- *                                                      RCC_APB1_PREPH_SPI2
- *                                                      RCC_APB1_PREPH_SPI3
- *                                                      RCC_APB1_PREPH_USART2
- *                                                      RCC_APB1_PREPH_USART3
- *                                                      RCC_APB1_PREPH_USART4
- *                                                      RCC_APB1_PREPH_USART5
- *                                                      RCC_APB1_PREPH_I2C1
- *                                                      RCC_APB1_PREPH_I2C2
- *                                                      RCC_APB1_PREPH_I2C3
- *                                                      RCC_APB1_PREPH_CAN1
- *                                                      RCC_APB1_PREPH_CAN2
- *                                                      RCC_APB1_PREPH_PWR
- *                                                      RCC_APB1_PREPH_DAC	}
- *
- * 				     -uint8_t Status        :in range { RCC_PREPH_ENABLE,
- *					                                    RCC_PREPH_DISABLE }
- *
- * Return:           -uint8_t : in range {  RT_PARAM,
- *											RT_ERROR,
- *											RT_SUCCESS }
- *
- *
- * Input/Output Parameters:
- * 					-Not Applicable (void)
- * ***************************************************************************************************************/
-uint8_t RCC_ControlAPB1PeriClk(uint32_t RCC_APB1_Perph,uint8_t Status){
-	if(
-			(
-					(RCC_APB1_Perph != RCC_APB1_PREPH_CAN1)&&
-					(RCC_APB1_Perph != RCC_APB1_PREPH_CAN2)&&
-					(RCC_APB1_Perph != RCC_APB1_PREPH_DAC)&&
-					(RCC_APB1_Perph != RCC_APB1_PREPH_I2C1)&&
-					(RCC_APB1_Perph != RCC_APB1_PREPH_I2C2)&&
-					(RCC_APB1_Perph != RCC_APB1_PREPH_I2C3)&&
-					(RCC_APB1_Perph != RCC_APB1_PREPH_PWR)&&
-					(RCC_APB1_Perph != RCC_APB1_PREPH_SPI2)&&
-					(RCC_APB1_Perph != RCC_APB1_PREPH_SPI3)&&
-					(RCC_APB1_Perph != RCC_APB1_PREPH_TIM12)&&
-					(RCC_APB1_Perph != RCC_APB1_PREPH_TIM13)&&
-					(RCC_APB1_Perph != RCC_APB1_PREPH_TIM14)&&
-					(RCC_APB1_Perph != RCC_APB1_PREPH_TIM2)&&
-					(RCC_APB1_Perph != RCC_APB1_PREPH_TIM3)&&
-					(RCC_APB1_Perph != RCC_APB1_PREPH_TIM4)&&
-					(RCC_APB1_Perph != RCC_APB1_PREPH_TIM5)&&
-					(RCC_APB1_Perph != RCC_APB1_PREPH_TIM6)&&
-					(RCC_APB1_Perph != RCC_APB1_PREPH_TIM7)&&
-					(RCC_APB1_Perph != RCC_APB1_PREPH_USART2)&&
-					(RCC_APB1_Perph != RCC_APB1_PREPH_USART3)&&
-					(RCC_APB1_Perph != RCC_APB1_PREPH_WWDG)
-
-			)||
-			(Status != RCC_PREPH_ENABLE && Status != RCC_PREPH_DISABLE)
-	)
-	{
-		return RT_PARAM;
-	}
-
-	if(Status == RCC_PREPH_ENABLE){
-		RCC -> APB1ENR |= RCC_APB1_Perph;
-	}
-	else {
-		RCC -> APB1ENR &= ~RCC_APB1_Perph;
-	}
-
-	return RT_SUCCESS;
-}
-
-/* **************************************************************************************************************
- * Public Function: RCC_ControlAPB2PeriClk
- * Description: This function is used to Control the peripherals connected on APB2 Bus.
- * Input Parameters:
- * 					-uint32_t RCC_APB2Perph : in range {RCC_APB2_PREPH_TIM1
- *                                                      RCC_APB2_PREPH_TIM8
- *			                                            RCC_APB2_PREPH_USART1
- *                                                      RCC_APB2_PREPH_USART6
- *                                                      RCC_APB2_PREPH_ADC1
- *                                                      RCC_APB2_PREPH_ADC2
- *                                                      RCC_APB2_PREPH_ADC3
- *                                                      RCC_APB2_PREPH_SDIO
- *                                                      RCC_APB2_PREPH_SPI1
- *                                                      RCC_APB2_PREPH_SYSCFG
- *                                                      RCC_APB2_PREPH_TIM9
- *                                                      RCC_APB2_PREPH_TIM10
- *                                                      RCC_APB2_PREPH_TIM11 }
-  *
- * 				     -uint8_t Status        :in range { RCC_PREPH_ENABLE,
- *					                                    RCC_PREPH_DISABLE }
- *
- * Return:           -uint8_t : in range {  RT_PARAM,
- *											RT_ERROR,
- *											RT_SUCCESS }
- *
- *
- * Input/Output Parameters:
- * 					-Not Applicable (void)
- * ***************************************************************************************************************/
-uint8_t RCC_ControlAPB2PeriClk(uint32_t RCC_APB2_Perph,uint8_t Status){
-	if(
-			(
-					(RCC_APB2_Perph != RCC_APB2_PREPH_ADC1  )&&
-					(RCC_APB2_Perph != RCC_APB2_PREPH_ADC2  )&&
-					(RCC_APB2_Perph != RCC_APB2_PREPH_ADC3  )&&
-					(RCC_APB2_Perph != RCC_APB2_PREPH_SDIO  )&&
-					(RCC_APB2_Perph != RCC_APB2_PREPH_SPI1  )&&
-					(RCC_APB2_Perph != RCC_APB2_PREPH_SYSCFG)&&
-					(RCC_APB2_Perph != RCC_APB2_PREPH_TIM1  )&&
-					(RCC_APB2_Perph != RCC_APB2_PREPH_TIM10 )&&
-					(RCC_APB2_Perph != RCC_APB2_PREPH_TIM11 )&&
-					(RCC_APB2_Perph != RCC_APB2_PREPH_TIM8  )&&
-					(RCC_APB2_Perph != RCC_APB2_PREPH_TIM9  )&&
-					(RCC_APB2_Perph != RCC_APB2_PREPH_USART1)&&
-					(RCC_APB2_Perph != RCC_APB2_PREPH_USART6)
-			)||
-			(Status != RCC_PREPH_ENABLE && Status != RCC_PREPH_DISABLE)
-	)
-	{
-		return RT_PARAM;
-	}
-
-	if(Status == RCC_PREPH_ENABLE){
-		RCC -> APB2ENR |= RCC_APB2_Perph;
-	}
-	else {
-		RCC -> APB2ENR &= ~RCC_APB2_Perph;
-	}
-
-	return RT_SUCCESS;
-}
-
-/* **************************************************************************************************************
- * Public Function: RCC_SetBusPrescaler
- *
- * Description: This function is used to Set any bus prescalar value.
- *
- * Caution 1: The software has to set these bits correctly not to exceed 84 MHz on this domain.
- *	The clocks are divided with the new prescaler factor from 1 to 16 AHB cycles after
- *	PPRE2 write.
- *
- * Caution 2:  The software has to set these bits correctly not to exceed 42 MHz on this domain.
- * The clocks are divided with the new prescaler factor from 1 to 16 AHB cycles after
- * PPRE1 write.
- *
- * Caution 3: The AHB clock frequency must be at least 25 MHz when the Ethernet is used.
- *
- * Input Parameters:
- * 					-uint32_t RCC_bus_prescaler : in range { RCC_AHB_PRE_CLEAR_MASK
- * 					                                         RCC_AHB_PRE_NO_DIV
- * 					                                         RCC_AHB_PRE_DIV_2
- * 					                                         RCC_AHB_PRE_DIV_4
- * 					                                         RCC_AHB_PRE_DIV_8
- * 					                                         RCC_AHB_PRE_DIV_16
- * 					                                         RCC_AHB_PRE_DIV_64
- * 					                                         RCC_AHB_PRE_DIV_128
- * 					                                         RCC_AHB_PRE_DIV_256
- * 					                                         RCC_AHB_PRE_DIV_512
- *
- * 					                                         RCC_APB1_PRE_CLEAR_MASK
- * 					                                         RCC_APB1_PRE_NO_DIV
- * 					                                         RCC_APB1_PRE_DIV_2
- * 					                                         RCC_APB1_PRE_DIV_4
- * 					                                         RCC_APB1_PRE_DIV_8
- * 					                                         RCC_APB1_PRE_DIV_16
- *
- * 					                                         RCC_APB2_PRE_CLEAR_MASK
- * 					                                         RCC_APB2_PRE_NO_DIV
- * 					                                         RCC_APB2_PRE_DIV_2
- * 					                                         RCC_APB2_PRE_DIV_4
- * 					                                         RCC_APB2_PRE_DIV_8
- * 					                                         RCC_APB2_PRE_DIV_16}
- *
- * Return:           -uint8_t : in range {  RT_PARAM,
- *											RT_ERROR,
- *											RT_SUCCESS }
- *
- *
- * Input/Output Parameters:
- * 					-Not Applicable (void)
- * ***************************************************************************************************************/
-uint8_t RCC_SetBusPrescaler(uint32_t RCC_bus_prescaler){
-
-	/*OR RCC_bus_prescaler > (RCC_AHB_PRE_NO_DIV |) */
-	if(
-			RCC_bus_prescaler != RCC_AHB_PRE_NO_DIV		 &&
-			RCC_bus_prescaler != RCC_AHB_PRE_DIV_2		 &&
-			RCC_bus_prescaler != RCC_AHB_PRE_DIV_4		 &&
-			RCC_bus_prescaler != RCC_AHB_PRE_DIV_8		 &&
-			RCC_bus_prescaler != RCC_AHB_PRE_DIV_16		 &&
-			RCC_bus_prescaler != RCC_AHB_PRE_DIV_64		 &&
-			RCC_bus_prescaler != RCC_AHB_PRE_DIV_128	 &&
-			RCC_bus_prescaler != RCC_AHB_PRE_DIV_256	 &&
-			RCC_bus_prescaler != RCC_AHB_PRE_DIV_512	 &&
-			RCC_bus_prescaler != RCC_APB1_PRE_NO_DIV	 &&
-			RCC_bus_prescaler != RCC_APB1_PRE_DIV_2		 &&
-			RCC_bus_prescaler != RCC_APB1_PRE_DIV_4		 &&
-			RCC_bus_prescaler != RCC_APB1_PRE_DIV_8		 &&
-			RCC_bus_prescaler != RCC_APB1_PRE_DIV_16	 &&
-			RCC_bus_prescaler != RCC_APB2_PRE_NO_DIV	 &&
-			RCC_bus_prescaler != RCC_APB2_PRE_DIV_2		 &&
-			RCC_bus_prescaler != RCC_APB2_PRE_DIV_4		 &&
-			RCC_bus_prescaler != RCC_APB2_PRE_DIV_8		 &&
-			RCC_bus_prescaler != RCC_APB2_PRE_DIV_16		)
-	{
-		return RT_PARAM;
-	}
-		/*AHB bus option */
-	if (!(GET_BIT(RCC_bus_prescaler,8) | GET_BIT(RCC_bus_prescaler,9) ) ){
-		RCC -> CFGR &= RCC_AHB_PRE_CLEAR_MASK;
-		RCC -> CFGR |= RCC_bus_prescaler;
-	}
-	else if (GET_BIT(RCC_bus_prescaler,8)){
-		CLR_BIT(RCC_bus_prescaler,8);
-		RCC -> CFGR &= RCC_APB1_PRE_CLEAR_MASK;
-		RCC -> CFGR |= RCC_bus_prescaler;
-	}
-	else if (GET_BIT(RCC_bus_prescaler,9)){
-		CLR_BIT(RCC_bus_prescaler,9);
-		RCC -> CFGR &= RCC_APB2_PRE_CLEAR_MASK;
-		RCC -> CFGR |= RCC_bus_prescaler;
-	}
-
-	return RT_SUCCESS;
-}
-
-/* **************************************************************************************************************
- * Public Function: RCC_GetBusPrescaler
- *
- * Description: This function is used to Get any bus prescalar value.
- *
- * Input Parameters:
- *
- *
- * Return:           -uint8_t : in range {  RT_PARAM,
- *											RT_ERROR,
- *											RT_SUCCESS }
- *
- *
- * Input/Output Parameters:
- * 					-uint32_t RCC_bus_prescaler : in range { RCC_AHB_PRE_CLEAR_MASK
- * 					                                         RCC_AHB_PRE_NO_DIV
- * 					                                         RCC_AHB_PRE_DIV_2
- * 					                                         RCC_AHB_PRE_DIV_4
- * 					                                         RCC_AHB_PRE_DIV_8
- * 					                                         RCC_AHB_PRE_DIV_16
- * 					                                         RCC_AHB_PRE_DIV_64
- * 					                                         RCC_AHB_PRE_DIV_128
- * 					                                         RCC_AHB_PRE_DIV_256
- * 					                                         RCC_AHB_PRE_DIV_512
- *
- * 					                                         RCC_APB1_PRE_CLEAR_MASK
- * 					                                         RCC_APB1_PRE_NO_DIV
- * 					                                         RCC_APB1_PRE_DIV_2
- * 					                                         RCC_APB1_PRE_DIV_4
- * 					                                         RCC_APB1_PRE_DIV_8
- * 					                                         RCC_APB1_PRE_DIV_16
- *
- * 					                                         RCC_APB2_PRE_CLEAR_MASK
- * 					                                         RCC_APB2_PRE_NO_DIV
- * 					                                         RCC_APB2_PRE_DIV_2
- * 					                                         RCC_APB2_PRE_DIV_4
- * 					                                         RCC_APB2_PRE_DIV_8
- * 					                                         RCC_APB2_PRE_DIV_16}
- * ***************************************************************************************************************/
-uint8_t RCC_GetBusPrescaler(uint32_t RCC_bus,uint32_t* RCC_bus_prescaler){
-	if (RCC_bus != RCC_AHB_BUS && RCC_bus != RCC_APB1_BUS  && RCC_bus != RCC_APB2_BUS ){
 		return RT_ERROR;
 	}
 
-	*RCC_bus_prescaler = RCC -> CFGR & RCC_bus;
+	return RT_SUCCESS ;
+}
+
+/* Public Function:  Rcc_GetCurrrentSysClk_Frequency								   									*
+ * Description: This function is used to Get Current System Clock Frequency
+ * Input parameters:
+ * 					- *ClkFreq        (uint32_t)
+ * 					:  in range : {}
+ *
+ * Return:
+ * 					- Status (uint8_t)
+ *                    RT_SUCCESS
+ *                    RT_PARAM
+ *                    RT_ERROR
+ *                    RT_TIME_OUT
+ *
+ * Input/Output Parameter:
+ * 					- *ClkFreq        (uint32_t)
+ *
+ ***********************************************************************************************************************/
+uint8_t	Rcc_GetCurrrentSysClk_Frequency(uint32_t *ClkFreq){
+	uint32_t	current_clk ;
+	uint32_t	current_M ;
+	uint32_t	current_N ;
+	uint32_t	current_P ;
+	uint32_t	current_Src ;
+	if ( ClkFreq != NULL){								//Check if Passing valid address
+		current_clk = Rcc -> CFGR & RCC_CFGR_SWS ;
+
+		switch (current_clk){
+		case RCC_SWS_HSI :
+			*ClkFreq = RCC_HSI_CLOCK_FREQ ;
+			break;
+
+		case RCC_SWS_HSE :
+			*ClkFreq = RCC_HSE_CLOCK_FREQ ;
+			break;
+
+		case RCC_SWS_PLL :
+			current_M  	 =  (Rcc -> PLLCFGR) & RCC_PLL_READ_M ;
+			current_N  	 = ((Rcc -> PLLCFGR) & RCC_PLL_READ_N)   >> 6 ;
+			current_P  	 = ((Rcc -> PLLCFGR) & RCC_PLL_READ_P)   >> 16 ;
+			current_Src  = ((Rcc -> PLLCFGR) & RCC_PLL_READ_SRC) >> 22 ;
+
+			if ( current_Src == RCC_PLL_SRC_HSI ){
+				*ClkFreq = ((( RCC_HSI_CLOCK_FREQ / current_M ) * current_N ) / ((current_P * (uint32_t)2) + (uint32_t)2) );
+			}
+			else if ( current_Src == RCC_PLL_SRC_HSE ){
+				*ClkFreq = ((( RCC_HSE_CLOCK_FREQ / current_M ) * current_N ) / ((current_P * (uint32_t)2) + (uint32_t)2) );
+			}
+			break;
+
+		default:
+			return RT_ERROR ;
+		}
+
+	}
+	else
+		return RT_PARAM ;
+
+	return RT_SUCCESS ;
+}
+
+/* Public Function:  Rcc_SetMco_Clock     											 					  			    *
+ * Description: This function is used to Select Mco1 and Mco2 Clock Source and Configure their Prescaler
+ * Input parameters:
+ * 					-  Mco_ClkSrc       in range : {RCC_MC0_1_SRC_xx  - RCC_MC0_2_SRC_xx}
+ * 					-  Mco_Pre          in range : {RCC_MCO1PRE_xx 	  - RCC_MCO2PRE_xx  }
+ *
+ * Return:
+ * 					- Status (uint8_t)
+ *                    RT_SUCCESS
+ *                    RT_PARAM
+ *                    RT_ERROR
+ *                    RT_TIME_OUT
+ *
+ * Input/Output Parameter:
+ * 					- Not Applicable
+ *
+ ***********************************************************************************************************************/
+uint8_t Rcc_SetMco_Clock(uint32_t Mco_ClkSrc ,uint32_t Mco_Pre){
+
+	uint32_t McoClk_local = Rcc -> CFGR ;
+
+	if ((Mco_ClkSrc == RCC_MC0_1_SRC_HSI
+			|| Mco_ClkSrc  == RCC_MC0_1_SRC_LSE
+			|| Mco_ClkSrc  == RCC_MC0_1_SRC_HSE
+			|| Mco_ClkSrc  == RCC_MC0_1_SRC_PLL)
+			&&
+			(Mco_Pre == RCC_MCO1PRE_2
+					|| Mco_Pre == RCC_MCO1PRE_3
+					|| Mco_Pre == RCC_MCO1PRE_4
+					|| Mco_Pre == RCC_MCO1PRE_5)){
+
+		McoClk_local &= RCC_CFGR_MCO_1_CLEAR ;
+		McoClk_local &= RCC_CFGR_MCO1PRE_CLEAR  ;
+		McoClk_local |= Mco_ClkSrc | Mco_Pre ;
+		Rcc -> CFGR = McoClk_local;
+		if (Rcc -> CFGR != McoClk_local)
+		{
+			return RT_ERROR ;
+		}
+	}
+	else if (  (Mco_ClkSrc == RCC_MC0_2_SRC_SYSCLK
+			|| Mco_ClkSrc == RCC_MC0_2_SRC_PLLI2S
+			|| Mco_ClkSrc == RCC_MC0_2_SRC_HSE
+			|| Mco_ClkSrc == RCC_MC0_2_SRC_PLL)
+			&& (Mco_Pre == RCC_MCO2PRE_2
+					||  Mco_Pre == RCC_MCO2PRE_3
+					||  Mco_Pre == RCC_MCO2PRE_4
+					||  Mco_Pre == RCC_MCO2PRE_5)){
+
+		if (Mco_ClkSrc == RCC_MC0_2_SRC_SYSCLK){
+			Mco_ClkSrc = (uint32_t)BIT_CLR;
+		}
+		McoClk_local &= RCC_CFGR_MCO_2_CLEAR ;
+		McoClk_local &= RCC_CFGR_MCO2PRE_CLEAR  ;
+		McoClk_local |= Mco_ClkSrc | Mco_Pre ;
+		Rcc -> CFGR = McoClk_local;
+		if (Rcc -> CFGR != McoClk_local)
+		{
+			return RT_ERROR ;
+		}
+	}
+	else {
+		return RT_PARAM ;
+	}
 
 	return RT_SUCCESS;
 }
 
-/**************************************************************************************************************
- * Public Function: RCC_GetAHBFreqMhz
- * Description: This function is used to get the freqeuncy of the AHB Clock
- * Input Parameters:
- * 					 -Not Applicable (void)
+/* Public Function:  Rcc_SetBus_Prescaler																			    *
+ * Description: This function is used to Configure AHB1 and APB1 and APB2 Prescalers
+ * Input parameters:
+ * 					-  Bus        (uint32_t)
+ * 					:  in range : {RCC_AHB_PRE_xx - RCC_APB1_PRE_xx - RCC_APB2_PRE_xx}
  *
+ * Return:
+ * 					- Status (uint8_t)
+ *                    RT_SUCCESS
+ *                    RT_PARAM
+ *                    RT_ERROR
+ *                    RT_TIME_OUT
  *
- * Return:           -Status_e : in range {  _PARAM,
- *											 _ERROR,
- *											 _SUCCESS }
+ * Input/Output Parameter:
+ * 					- Not Applicable
  *
- *
- * Input/Output Parameters:
- * 					-Not Applicable (void)
- * ***************************************************************************************************************/
-uint8_t RCC_GetAHBFreqMhz(uint32_t *freq_Mhz){
+ ****************************************************************************************************************/
+uint8_t Rcc_SetBus_Prescaler(uint32_t Bus){
 
-	uint32_t AHBBusPrescaler;
+	uint32_t BusPre_local = Rcc -> CFGR ;
 
-	if (freq_Mhz == NULL ){
-		return RT_PARAM;
+	if (   Bus == RCC_APB1_PRE_2
+			|| Bus == RCC_APB1_PRE_4
+			|| Bus == RCC_APB1_PRE_8
+			|| Bus == RCC_APB1_PRE_16){
+
+		BusPre_local &= RCC_APB1_PRE_CLEAR ;
+		BusPre_local |= Bus ;
+		Rcc -> CFGR = BusPre_local;
+		if (Rcc -> CFGR != BusPre_local)
+		{
+			return RT_ERROR ;
+		}
 	}
+	else if (  Bus == RCC_APB2_PRE_2
+			|| Bus == RCC_APB2_PRE_4
+			|| Bus == RCC_APB2_PRE_8
+			|| Bus == RCC_APB2_PRE_16){
 
-	AHBBusPrescaler =  RCC -> CFGR & RCC_AHB_BUS;
+		BusPre_local &= RCC_APB2_PRE_CLEAR ;
+		BusPre_local |= Bus ;
+		Rcc -> CFGR = BusPre_local;
+		if (Rcc -> CFGR != BusPre_local)
+		{
+			return RT_ERROR ;
+		}
+	}
+	else if(   Bus == RCC_AHB_PRE_2
+			|| Bus == RCC_AHB_PRE_4
+			|| Bus == RCC_AHB_PRE_8
+			|| Bus == RCC_AHB_PRE_16
+			|| Bus == RCC_AHB_PRE_64
+			|| Bus == RCC_AHB_PRE_128
+			|| Bus == RCC_AHB_PRE_256
+			|| Bus == RCC_AHB_PRE_512){
 
-	switch (AHBBusPrescaler){
-	case RCC_AHB_PRE_DIV_2:	  *freq_Mhz = *freq_Mhz /2;  	    break;
-	case RCC_AHB_PRE_DIV_4:   *freq_Mhz = *freq_Mhz /4;       break;
-	case RCC_AHB_PRE_DIV_8:   *freq_Mhz = *freq_Mhz /8;       break;
-	case RCC_AHB_PRE_DIV_16:  *freq_Mhz = *freq_Mhz /16;      break;
-	case RCC_AHB_PRE_DIV_64:  *freq_Mhz = *freq_Mhz /64;      break;
-	case RCC_AHB_PRE_DIV_128: *freq_Mhz = *freq_Mhz /128;     break;
-	case RCC_AHB_PRE_DIV_256: *freq_Mhz = *freq_Mhz /256;     break;
+		BusPre_local &= RCC_AHB_PRE_CLEAR ;
+		BusPre_local |= Bus ;
+		Rcc -> CFGR = BusPre_local;
+		if (Rcc -> CFGR != BusPre_local)
+		{
+			return RT_ERROR ;
+		}
+	}
+	else {
+		return RT_PARAM ;
 	}
 
 	return RT_SUCCESS;
-
 }
+
+/* Public Function:  Rcc_GetAHB_Prescaler																	    *
+ * Description: This function is used to Get AHB1 Bus Prescaler.
+ * Input parameters:
+ *
+ * Return:
+ * 					- Status (uint8_t)
+ *                    RT_SUCCESS
+ *                    RT_PARAM
+ *                    RT_ERROR
+ *                    RT_TIME_OUT
+ *
+ * Input/Output Parameter:
+ * 					- Rcc_AHB_Pre (uint32_t)
+ *
+ ****************************************************************************************************************/
+uint8_t Rcc_GetAHB_Prescaler(uint16_t *Rcc_AHB_Pre){
+
+	uint32_t Loc_AHB_Pre = 0 ;
+	RT_Debug Status = RT_SUCCESS ;
+
+	if (Rcc_AHB_Pre != NULL)
+	{
+		Loc_AHB_Pre  = (Rcc -> CFGR & RCC_AHB_PRE_READ);
+		switch(Loc_AHB_Pre)
+		{
+		case	RCC_AHB_PRE_2 :
+			*Rcc_AHB_Pre = 2 ;
+			break;
+		case	RCC_AHB_PRE_4	:
+			*Rcc_AHB_Pre = 4 ;
+			break;
+		case	RCC_AHB_PRE_8	:
+			*Rcc_AHB_Pre = 8 ;
+			break;
+		case	RCC_AHB_PRE_16	:
+			*Rcc_AHB_Pre = 16 ;
+			break;
+		case	RCC_AHB_PRE_64	:
+			*Rcc_AHB_Pre = 64 ;
+			break;
+		case	RCC_AHB_PRE_128 :
+			*Rcc_AHB_Pre = 128 ;
+			break;
+		case	RCC_AHB_PRE_256 :
+			*Rcc_AHB_Pre = 256 ;
+			break;
+		case 	RCC_AHB_PRE_512 :
+			*Rcc_AHB_Pre = 512 ;
+			break;
+		default :
+			*Rcc_AHB_Pre = 1 ;
+			break;
+		}
+
+	}
+
+	else {
+
+		Status = RT_PARAM;
+	}
+
+
+	return
+			Status ;
+}
+
+

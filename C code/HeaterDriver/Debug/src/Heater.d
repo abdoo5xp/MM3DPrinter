@@ -1,4 +1,4 @@
-src/Heater.o: ../src/Heater.c ../src/../../lib/Bit_Mask.h \
+src/Heater.o: ../src/Heater.c ../src/../../lib/Bits.h \
  ../src/../../lib/Bit_Math.h ../src/../../lib/Error_codes.h \
  ../system/include/cmsis/stm32f4xx.h \
  ../system/include/cmsis/stm32f407xx.h ../system/include/cmsis/core_cm4.h \
@@ -72,10 +72,10 @@ src/Heater.o: ../src/Heater.c ../src/../../lib/Bit_Mask.h \
  ../system/include/stm32f4-hal/stm32f4xx_hal_spdifrx.h \
  ../system/include/stm32f4-hal/stm32f4xx_hal_dfsdm.h \
  ../system/include/stm32f4-hal/stm32f4xx_hal_lptim.h \
- ../system/include/diag/Trace.h ../src/Rcc.h ../src/GPIO.h \
+ ../system/include/diag/Trace.h ../src/Rcc_int.h ../src/GPIO_int.h \
  ../src/Heater.h ../src/Heater_cfg.h
 
-../src/../../lib/Bit_Mask.h:
+../src/../../lib/Bits.h:
 
 ../src/../../lib/Bit_Math.h:
 
@@ -229,9 +229,9 @@ src/Heater.o: ../src/Heater.c ../src/../../lib/Bit_Mask.h \
 
 ../system/include/diag/Trace.h:
 
-../src/Rcc.h:
+../src/Rcc_int.h:
 
-../src/GPIO.h:
+../src/GPIO_int.h:
 
 ../src/Heater.h:
 

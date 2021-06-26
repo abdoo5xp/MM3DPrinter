@@ -51,6 +51,7 @@ static void App_vidMaterialSwap(uint8_t OldMaterial, uint8_t CurrentMaterial,uin
 	/*Wait for it */
 	App_vidWaitForActionExecution();
 
+	trace_printf("Cut \n");
 	/*Perform the Cut Action
 	 * TODO: configure the wait time */
 	Cutter_enuTurnOn();
@@ -66,7 +67,7 @@ static void App_vidMaterialSwap(uint8_t OldMaterial, uint8_t CurrentMaterial,uin
 	App_vidWaitForActionExecution();
 
 	/***************************Move the old material from Cutter to The Heater**************************************/
-	Extruder_SetDirection(EXTRUDER_E ,EXTRUDER_DIR_CW);
+	Extruder_SetDirection(EXTRUDER_E ,EXTRUDER_DIR_CCW);
 	Extruder_SetFeedRate(EXTRUDER_E, FeedRate);
 	Extruder_SetMaterialLength(EXTRUDER_E, APP_CUTTER_HEATER_OFFSET_um, EXTRUDER_DISABLE);
 
@@ -109,31 +110,38 @@ static void App_vidMaterialSwap(uint8_t OldMaterial, uint8_t CurrentMaterial,uin
 
 		/*Run the new material */
 		Extruder_SetDirection(CurrentMaterial ,EXTRUDER_DIR_CW);
-		trace_printf("FeedRate %d\n",FeedRate);
 		Extruder_SetFeedRate(CurrentMaterial, FeedRate);
-		Extruder_SetMaterialLength(CurrentMaterial, MaterialLength , EXTRUDER_DISABLE);
+		Extruder_SetMaterialLength(CurrentMaterial, APP_FEEDER_HEATER_OFFSET_um , EXTRUDER_DISABLE);
+
+		App_vidWaitForActionExecution();
 
 		/*Wait till it reaches to the heater */
-		do
+	/*	do
 		{
 			IR_enuGetState(&IRHasNewMaterialReached);
 		}while(IRHasNewMaterialReached == IR_State_Off);
 
-		trace_printf("read IR Wrong!!!! \n");
-		/*Pause the Feed of the new material if Material Length > Offset Between Feeder and Heater */
+		//trace_printf("read IR Wrong!!!! \n");
+		/*Pause the Feed of the new material if Material Length > Offset Between Feeder and Heater
 		Extruder_Pause();
 
+
+		//trace_printf("Pause!!!! \n");
+	 	 */
 		/*join the two material to together */
 		HEATER_enuStart();
 		Service_enuDelay(APP_HEATING_TIME);
 		HEATER_enuStop();
 
+		//trace_printf("Continue!!!! \n");
+
 		/*Continue the Feed of the new material if Material Length > Offset Between Feeder and Heater */
-		Extruder_Continue();
-		/***********************************Start Extruder After Heating************************************************************/
-		Extruder_SetDirection(EXTRUDER_E ,EXTRUDER_DIR_CW);
-		Extruder_SetFeedRate(EXTRUDER_E, FeedRate);
-		Extruder_SetMaterialLength(EXTRUDER_E, MaterialLength - APP_FEEDER_HEATER_OFFSET_um , EXTRUDER_DISABLE);
+	/*	Extruder_SetDirection(EXTRUDER_E ,EXTRUDER_DIR_CW);
+		Extruder_Continue(EXTRUDER_ENABLE);
+		*/
+		Extruder_SetDirection(CurrentMaterial ,EXTRUDER_DIR_CW);
+		Extruder_SetFeedRate(CurrentMaterial, FeedRate);
+		Extruder_SetMaterialLength(CurrentMaterial, MaterialLength - APP_FEEDER_HEATER_OFFSET_um , EXTRUDER_ENABLE);
 	}
 }
 
@@ -143,8 +151,10 @@ void App_vidInit()
 	Extruder_Init();
 	Extruder_SetAllStatus(EXTRUDER_ENABLE);
 	Extruder_SetALLDirection(EXTRUDER_DIR_CW);
+	Extruder_SetDirection(EXTRUDER_E,EXTRUDER_DIR_CCW);
+
 	/* Limit Switch */
-	Buffer_Init();
+	//Buffer_Init();
 	/*******************/
 	Cutter_enuInit();
 	HEATER_enuInit(HEATER_DUTYCYCLE);

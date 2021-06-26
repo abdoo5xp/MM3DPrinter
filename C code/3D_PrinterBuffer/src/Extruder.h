@@ -175,7 +175,7 @@ extern RT_Debug Extruder_Pause(void);
  * 		- Not Applicable
 
  ***************************************************************************************************/
-extern RT_Debug Extruder_Continue(void);
+extern RT_Debug Extruder_Continue( ExtruderrWorking_enu Extruder_Status);
 
 /* Public Function:  Extruder_SetCallBackFunction														      *
  * Description: This function is used to Configure Pin Status (HIGH ,LOW)

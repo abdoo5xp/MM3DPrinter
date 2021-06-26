@@ -1,424 +1,393 @@
 /*
- * GPIO.c
+ * Gpio.c
  *
- *  Created on: Feb 6, 2021
- *      Author: abdoo
+ *  Created on: Feb 5, 2021
+ *      Author: micro
  */
+
+
 #include <stdint.h>
-#include "../../lib/Bit_Mask.h"
-#include "../../lib/Bit_Math.h"
-#include "../../lib/STM32_F407_Registers.h"
-#include "../../lib/Error_codes.h"
-#include "GPIO.h"
+#include <stddef.h>
+#include "diag/Trace.h"
+#include "../../../lib/src/Bits.h"
+#include "../../../lib/src/Bit_Math.h"
+#include "../../../lib/src/RT_Debug.h"
+#include "../../../lib/src/stm32f407_Registers.h"
+#include "Gpio_int.h"
 
-#define NULL 		(void *)0
-#define GPIO_LCK_MASK					    (uint32_t) 0x0000FFFF
-#define IS_GPIO_LCK_PINS(pins)				(pins <= GPIO_LCK_MASK )
 
-/* we could have done that but this would consume memory (.data section ),so the macros way is better.
+// Clear Mask for MODE Register**************************************************
+#define 	GPIO_MODE_CLR	 				(uint32_t)(BIT_0 | BIT_1)
+
+//	Clear Mask for OTYPE Register************************************************
+#define 	GPIO_OTYPE_CLR					((uint32_t)BIT_0)
+
+// Clear Mask for OSPEDD Register************************************************
+#define 	GPIO_OSPEED_CLR	 				(uint32_t)(BIT_0 | BIT_1)
+
+// Clear Mask for PUPD Register***************************************************
+#define		GPIO_PUPD_CLR					(uint32_t)(BIT_0 | BIT_1)
+
+// Clear Mask for AF Registers***************************************************
+#define		GPIO_AF_CLR						(uint32_t)(BIT_0 | BIT_1 | BIT_2 | BIT_3)
+
+
+// BSRR SET Mask***********************************************************************
+#define     GPIO_BSRR_SET	                          BIT_0
+
+// BSRR RESET Mask***********************************************************************
+#define     GPIO_BSRR_RESET                           BIT_16
+
+// IDR Read Mask*************************************************************************
+#define     GPIO_IDR_READ                             BIT_0
+
+// LOCK Mask*************************************************************************
+#define     GPIO_LCKR_LCKK                            BIT_16
+
+// READ Mask for MODE Register*******************************************************
+#define 	GPIO_MODE_READ			  				 (uint32_t)(BIT_0 | BIT_1)
+
+// GPIO_PIN Mask ********************************************************************
+#define 	GPIO_PIN_MASK							 (uint32_t)0x0000FFFF
+
+
+
+/* Public Function:  Gpio_Init														      				*
+ * Description: This function is used to Configure Gpio Pins
+ * Input parameters:
+ *  	- Address of object of (Pincfg_t)
  *
-uint32_t*const gpio_handler[8]={
-		(gpio_t*)GPIOA_BASE_ADDRESS,
-		(gpio_t*)GPIOB_BASE_ADDRESS,
-		(gpio_t*)GPIOC_BASE_ADDRESS,
-		(gpio_t*)GPIOD_BASE_ADDRESS,
-		(gpio_t*)GPIOE_BASE_ADDRESS,
-		(gpio_t*)GPIOF_BASE_ADDRESS,
-		(gpio_t*)GPIOG_BASE_ADDRESS,
-		(gpio_t*)GPIOH_BASE_ADDRESS
-};
- */
-
-typedef struct {
-	uint32_t GPIO_MODER        ;
-	uint32_t GPIO_OTYPER       ;
-	uint32_t GPIO_OSPEEDR      ;
-	uint32_t GPIO_PUPDR	    	;
-	uint32_t GPIO_IDR	        ;
-	uint32_t GPIO_ODR	        ;
-	uint32_t GPIO_BSSR	        ;
-	uint32_t GPIO_LCKR	        ;
-	uint32_t GPIO_AFRL	        ;
-	uint32_t GPIO_AFRH	        ;
-}gpio_t;
-
-/* **************************************************************************************************************
- * Public Function: GPIO_InitPin
- * Description: This function is used to turn the RCC clocks ON/OFF
- * Input Parameters:
- * 					-gpio_pinConfig_t* pinConfig ->
- *				        void* port     : in range { GPIO_PORTA ,
-													GPIO_PORTB ,
-													GPIO_PORTC ,
-													GPIO_PORTD ,
-													GPIO_PORTE ,
-													GPIO_PORTF ,
-													GPIO_PORTG ,
-													GPIO_PORTH  }
-
- *				        uint32_t pinNum: in range { GPIO_PIN_0	,
-													GPIO_PIN_1  ,
-													GPIO_PIN_2  ,
-													GPIO_PIN_3  ,
-													GPIO_PIN_4  ,
-													GPIO_PIN_5  ,
-													GPIO_PIN_6  ,
-													GPIO_PIN_7  ,
-													GPIO_PIN_8  ,
-													GPIO_PIN_9  ,
-													GPIO_PIN_10 ,
-													GPIO_PIN_11 ,
-													GPIO_PIN_12 ,
-													GPIO_PIN_13 ,
-													GPIO_PIN_14 ,
-													GPIO_PIN_15 }
-
- *				        uint32_t mode  : in range { GPIO_MODE_INPUT  ,
-													GPIO_MODE_OUTPUT ,
-													GPIO_MODE_AF	 ,
-													GPIO_MODE_ANALOGE }
-
- *				        uint32_t otype : in range { GPIO_OTYPE_PUSH_PULL ,
- *				        							GPIO_OTYPE_OPEN_DRAIN}
-
- *				        uint32_t ospeed: in range { GPIO_OSPEED_LOW		 ,
-													GPIO_OSPEED_MED		 ,
-													GPIO_OSPEED_HIGH	 ,
-													GPIO_OSPEED_VERY_HIGH}
-
- *				        uint32_t pupd  : in range { GPIO_NO_PULL
-													GPIO_PULL_UP
-													GPIO_PULL_DOWN }
-
- *				        uint32_t AF;   : in range { GPIO_AF0_SYSTEM
-													GPIO_AF1_TIM1_TIM2
-													GPIO_AF2_TIM3_5
-													GPIO_AF3_TIM8_11
-													GPIO_AF4_I2C1_3
-													GPIO_AF5_SPI1_SPI2
-													GPIO_AF6_SPI3
-													GPIO_AF7_USART1_3
-													GPIO_AF8_USART4_6
-													GPIO_AF9_CAN1_CAN2_TIM12_14
-													GPIO_AF10_OTG_FS__OTG_HS
-													GPIO_AF11_ETH
-													GPIO_AF12_FSMC_SDIO__OTG_HS1
-													GPIO_AF13_DCMI
-													GPIO_AF14
-													GPIO_AF15_EVENTOUT}
+ * Options:
+ * 		- Gpio_Mode 	in range : { GPIO_MODE_xx  ( xx : - OUTPUT  - INPUT - ANALOG - AF )}
+ * 		- Gpio_OType   	in range : { - GPIO_OTYPE_PUSH_PULL	 - GPIO_OTYPE_OPEN_DRAIN }
+ * 		- Gpio_OSpeed  	in range : { GPIO_OSPEED_xx  ( xx : - LOW_SPEED     - MEDIUM_SPEED
+ * 														    - HIGH_SPEE	   - VERY_HIGH_SPEED)}
+ * 		- Gpio_PUPD 	in range : { GPIO_PUPD_xx ( xx : - FLOATING	- PULL_UP  - PULL_DOWN )}
+ * 		- Gpio_AF 	  	in range : { GPIO_AFxx  (xx :  0 .. 15)}
+ *      - Gpio_Port		in range : { GPIOxx (xx : A , B , C , D , E , H)}
+ *      - Gpio_PinNum	in range : { GPIO_PINXX (xx :  0 .. 15)}
  *
- * Return:           -uint8_t : in range {  RT_PARAM,
- *											RT_ERROR,
- *											RT_SUCCESS }
+ * Return:
+ * 		- Status (uint8_t)
+ *         RT_SUCCESS
+ *         RT_PARAM
+ *         RT_ERROR
+ *         RT_TIME_OUT
  *
+ * Input/Output Parameter:
+ * 		- Not Applicable
+
+ **********************************************************************************************************/
+uint8_t Gpio_Init(const Pincfg_t* Pincfg){
+
+	if (Pincfg != NULL){
+
+		volatile Gpio_t* Port   	= (Pincfg -> Gpio_Port)  ;
+		uint32_t Pin    			= Pincfg -> Gpio_PinNum  ;
+		uint32_t Mode   			= Pincfg -> Gpio_Mode 	 ;
+		uint32_t OType  			= Pincfg -> Gpio_OType 	 ;
+		uint32_t OType_Addr 		= (uint32_t)Port + 0x04  ;
+		uint32_t OSpeed 			= Pincfg -> Gpio_OSpeed  ;
+		uint32_t PUPD   			= Pincfg -> Gpio_PUPD 	 ;
+		uint32_t AF    	    		= Pincfg -> Gpio_AF      ;
+		uint32_t Local_Reg			= 0 ;
+
+		if ( Pin <= GPIO_PIN15 && (Port == GPIOA || Port == GPIOB
+						|| Port == GPIOC || Port == GPIOD
+						|| Port == GPIOE || Port == GPIOH) ){
+
+
+			if ( Mode == GPIO_MODE_OUTPUT || Mode == GPIO_MODE_INPUT ||  Mode == GPIO_MODE_ANALOG ||  Mode == GPIO_MODE_AF  ){
+				Local_Reg		= Port -> MODER ;
+				Local_Reg	 	&= ~(GPIO_MODE_CLR << (Pin << 1))  ;
+				Local_Reg	 	|= (Mode << (Pin << 1)) ;
+				Port -> MODER   =  Local_Reg ;
+			}
+			else{
+				return RT_PARAM ;
+			}
+
+			if (Mode == GPIO_MODE_OUTPUT || Mode == GPIO_MODE_AF){
+				if( OType == GPIO_OTYPE_PUSH_PULL || OType == GPIO_OTYPE_OPEN_DRAIN){
+
+					BIT_BAND(OType_Addr,Pin) = OType;
+				}
+				else{
+					return RT_PARAM ;
+				}
+
+				if ( OSpeed == GPIO_OSPEED_LOW_SPEED
+						|| OSpeed == GPIO_OSPEED_MEDIUM_SPEED
+						||  OSpeed == GPIO_OSPEED_HIGH_SPEED
+						||  OSpeed == GPIO_OSPEED_VERY_HIGH_SPEED ){
+
+					Local_Reg		= Port -> OSPEEDR ;
+					Local_Reg		&= ~(GPIO_OSPEED_CLR << (Pin << 1))  ;
+					Local_Reg 		|= (OSpeed << (Pin << 1)) ;
+					Port -> OSPEEDR = Local_Reg ;
+				}
+				else{
+					return RT_PARAM ;
+				}
+			}
+
+			switch (Mode){
+			case  GPIO_MODE_ANALOG:
+				Local_Reg		=  Port -> PUPDR ;
+				Local_Reg  	 	&= ~(GPIO_PUPD_CLR << (Pin << 1))  ;
+				Local_Reg   	|= ( GPIO_PUPD_FLOATING << (Pin << 1)) ;
+				Port -> PUPDR	=  Local_Reg ;
+				break;
+			default :
+				if ( PUPD == GPIO_PUPD_FLOATING
+						||  PUPD == GPIO_PUPD_PULL_UP
+						||  PUPD == GPIO_PUPD_PULL_DOWN ){
+
+					Local_Reg		=  Port -> PUPDR ;
+					Local_Reg  	 	&= ~(GPIO_PUPD_CLR << (Pin << 1))  ;
+					Local_Reg   	|= ( PUPD << (Pin << 1)) ;
+					Port -> PUPDR	=  Local_Reg ;
+				}
+				else{
+					return RT_PARAM ;
+				}
+				break;
+			}
+
+			if (Mode == GPIO_MODE_AF){
+				if (AF <= GPIO_AF15_EVENTOUT){
+
+					Local_Reg			  = Port -> AFR[Pin >> 3] ;
+					Local_Reg 			  &= ~(GPIO_AF_CLR << ((Pin << 2) % 32)) ;
+					Local_Reg			  |= (AF << ((Pin << 2) % 32)) ;
+					Port -> AFR[Pin >> 3] = Local_Reg ;
+				}
+				else{
+					return RT_PARAM ;
+				}
+			}
+		}
+		else
+			return RT_PARAM ;
+	}
+	else
+		return RT_PARAM ;
+
+	return RT_SUCCESS ;
+}
+
+/* Public Function:  Gpio_WritePin														      *
+ * Description: This function is used to Configure Pin Status (HIGH ,LOW)
+ * Input parameters:
+ *      - Gpio_Port		in range : { GPIOxx (xx : A , B , C , D , E , H)}
+ *      - Gpio_PinNum	in range : { GPIO_PINXX (xx :  0 .. 15)}
+ * 		- Gpio_PinStatus 	in range : { GPIO_PIN_HIGH - GPIO_PIN_LOW }
  *
- * Input/Output Parameters:
- * 					-Not Applicable (void)
- * ***************************************************************************************************************/
-uint32_t GPIO_InitPin(gpio_pinConfig_t* pinConfig){
-	if(pinConfig == NULL){
-		return RT_PARAM;
-	}
-	if(
-			(
-					pinConfig->mode != GPIO_MODE_INPUT 			  &&
-					pinConfig->mode != GPIO_MODE_OUTPUT			  &&
-					pinConfig->mode != GPIO_MODE_AF				  &&
-					pinConfig->mode != GPIO_MODE_ANALOGE      )
-					||
-					(pinConfig->pinNum >15)
-					||
-					(
-					pinConfig->pupd  != GPIO_NO_PULL	  &&
-					pinConfig->pupd  != GPIO_PULL_UP	  &&
-					pinConfig->pupd  != GPIO_PULL_DOWN   )
-					||
-					(
-					pinConfig->port  != GPIO_PORTA       &&
-					pinConfig->port  != GPIO_PORTB       &&
-					pinConfig->port  != GPIO_PORTC       &&
-					pinConfig->port  != GPIO_PORTD       &&
-					pinConfig->port  != GPIO_PORTE       &&
-					pinConfig->port  != GPIO_PORTF       &&
-					pinConfig->port  != GPIO_PORTG       &&
-					pinConfig->port  != GPIO_PORTH	      )
-	){
-		return RT_PARAM;
-	}
-	gpio_t *port  =(gpio_t*) pinConfig->port;
-	/*Check if the pin is locked or not it is locked return error
-	 *
-	 * Turky said it is not our business here to check if the pin is locked or not  */
-//	if ((pinConfig -> port -> GPIO_LCKR & BIT_MASK_16) && (pinConfig -> port -> GPIO_LCKR & (BIT_MASK_0 << pinConfig->pinNum))){
-//		return RT_ERROR;
-//	}
-	pinConfig->pupd &= 0x0FFFFFFF;
+ * Return:
+ * 		- Status (uint8_t)
+ *         RT_SUCCESS
+ *         RT_PARAM
+ *         RT_ERROR
+ *         RT_TIME_OUT
+ *
+ * Input/Output Parameter:
+ * 		- Not Applicable
 
-	uint32_t modePinsPos  = (pinConfig -> pinNum << 1);
-	uint32_t clearPinsPos = ( (BIT_MASK_0 | BIT_MASK_1) << modePinsPos );
-	/*Set the mode */
-	/*Reset the pins you are going to set */
-	port->GPIO_MODER &= ~ clearPinsPos;
-	/*set the wanted mode register value with pinConfig->mode  after multiplying the pin number by 2*/
-	port->GPIO_MODER |= ( pinConfig->mode << modePinsPos);
+ ***************************************************************************************************/
+uint8_t Gpio_WritePin(void* Gpio_Port, uint32_t Gpio_PinNum, uint32_t Gpio_PinStatus){
 
-	/*Set the PUPD*/
-	port->GPIO_PUPDR &=~   clearPinsPos;
-	port->GPIO_PUPDR |=   (pinConfig->pupd	<< modePinsPos);
+	volatile Gpio_t* Port   =	 Gpio_Port  ;
 
-	if ((pinConfig->mode  == GPIO_MODE_OUTPUT) 			  	    &&
-		(
-		(pinConfig->otype != GPIO_OTYPE_PUSH_PULL  	  	    &&
-		pinConfig->otype != GPIO_OTYPE_OPEN_DRAIN)
-		||
-		(
-		pinConfig->ospeed != GPIO_OSPEED_LOW				&&
-		pinConfig->ospeed != GPIO_OSPEED_MED				&&
-		pinConfig->ospeed != GPIO_OSPEED_HIGH				&&
-		pinConfig->ospeed != GPIO_OSPEED_VERY_HIGH )
-		)
-		){
-		return RT_PARAM;
-	}
-	else {
-		pinConfig -> otype &= 0x0FFFFFFF;
-		pinConfig ->ospeed &= 0x0FFFFFFF;
-		/*Set the Otype */
-		port->GPIO_OTYPER &= ~ (BIT_MASK_0) << pinConfig->pinNum;
-		port->GPIO_OTYPER |= pinConfig->otype << pinConfig->pinNum;
+	if (Gpio_PinNum <= GPIO_PIN15 && (Gpio_Port == GPIOA || Gpio_Port == GPIOB
+					|| Gpio_Port == GPIOC || Gpio_Port == GPIOD
+					|| Gpio_Port == GPIOE || Gpio_Port == GPIOH) ){
 
-		/*Set the Ospeed */
-		port->GPIO_OSPEEDR&=~  clearPinsPos;
-		port->GPIO_OSPEEDR|=  (pinConfig->ospeed << modePinsPos);
-	}
+		switch (Gpio_PinStatus){
+		case GPIO_PIN_SET:
+			Port -> BSRR =  GPIO_BSRR_SET << Gpio_PinNum ;
+			break;
 
-
-	/*now i am trying to set the AF register value but i have to make sure that the mode is AF
-	 * and the AF value is less than 15 */
-	if ( (pinConfig->mode == GPIO_MODE_AF)  ){
-		if((pinConfig->AF & 0x0000000F)>15){
+		case GPIO_PIN_RESET:
+			Port -> BSRR =  GPIO_BSRR_RESET << Gpio_PinNum  ;
+			break;
+		default:
 			return RT_PARAM;
-		}
-		else {
-			modePinsPos  = (modePinsPos << 1) % 32 ;
-			clearPinsPos = ( (BIT_MASK_3 | BIT_MASK_2 | BIT_MASK_1 | BIT_MASK_0  ) << modePinsPos );
-
-			if(pinConfig->pinNum < 8){
-				/*Set the AFL */
-				port->GPIO_AFRL   &=~  clearPinsPos ;
-				port->GPIO_AFRL   |=  (pinConfig->AF << (modePinsPos) );
-			}
-			else {
-				/*Set the AFH */
-				port->GPIO_AFRH   &=~  clearPinsPos;
-				port->GPIO_AFRH   |=  (pinConfig->AF << modePinsPos);
-			}
-
+			break;
 		}
 	}
-
-
-	return RT_SUCCESS;
-}
-
-/* **************************************************************************************************************
- * Public Function: GPIO_WritePin
- * Description: This function is used to turn the RCC clocks ON/OFF
- * Input Parameters:
- *
- *				       - void* port     : in range { GPIO_PORTA ,
- *													GPIO_PORTB ,
- *													GPIO_PORTC ,
- *													GPIO_PORTD ,
- *													GPIO_PORTE ,
- *													GPIO_PORTF ,
- *													GPIO_PORTG ,
- *													GPIO_PORTH  }
- *
- *				       - uint32_t pinNum: in range { GPIO_PIN_0	,
- *													GPIO_PIN_1  ,
- *													GPIO_PIN_2  ,
- *													GPIO_PIN_3  ,
- *													GPIO_PIN_4  ,
- *													GPIO_PIN_5  ,
- *													GPIO_PIN_6  ,
- *													GPIO_PIN_7  ,
- *													GPIO_PIN_8  ,
- *													GPIO_PIN_9  ,
- *													GPIO_PIN_10 ,
- *													GPIO_PIN_11 ,
- *													GPIO_PIN_12 ,
- *													GPIO_PIN_13 ,
- *													GPIO_PIN_14 ,
- *													GPIO_PIN_15 }
- *
- *					   - uint32_t status: in range {GPIO_STATUS_HIGH,
- *													GPIO_STATUS_LOW}
- *
- * Return:         	   -uint8_t       : in range {  RT_PARAM,
- *	 											    RT_ERROR,
- *	 											    RT_SUCCESS }
- *
- * Input/Output Parameters:
- * 					-Not Applicable (void)
- * ***************************************************************************************************************/
-uint32_t GPIO_WritePin(void* port,uint32_t pinNumber,uint32_t status){
-	if(port == NULL || pinNumber > 15 || (status != GPIO_STATUS_HIGH && status != GPIO_STATUS_LOW )){
-		return RT_PARAM;
-	}
-	/*you have to reset the BR and set the BS to output high and vice versa in output low */
-	if(status == GPIO_STATUS_HIGH){
-		((gpio_t*)port)->GPIO_BSSR &=~ (BIT_MASK_0 << (pinNumber+16));
-		((gpio_t*)port)->GPIO_BSSR |=  (BIT_MASK_0 << pinNumber);
-	}
-	else {
-		((gpio_t*)port)->GPIO_BSSR &=~  (BIT_MASK_0 << pinNumber);
-		((gpio_t*)port)->GPIO_BSSR |=   (BIT_MASK_0 << (pinNumber+16));
-	}
-
-	/*we could have read the IDR here to make sure that the value is correctly set */
-	return RT_SUCCESS;
-}
-
-/* **************************************************************************************************************
- * Public Function: GPIO_ReadPin
- * Description: This function is used to turn the RCC clocks ON/OFF
- * Input Parameters:
- *
- *				       - void* port     : in range { GPIO_PORTA ,
- *													GPIO_PORTB ,
- *													GPIO_PORTC ,
- *													GPIO_PORTD ,
- *													GPIO_PORTE ,
- *													GPIO_PORTF ,
- *													GPIO_PORTG ,
- *													GPIO_PORTH  }
- *
- *				       - uint32_t pinNum: in range { GPIO_PIN_0	,
- *													GPIO_PIN_1  ,
- *													GPIO_PIN_2  ,
- *													GPIO_PIN_3  ,
- *													GPIO_PIN_4  ,
- *													GPIO_PIN_5  ,
- *													GPIO_PIN_6  ,
- *													GPIO_PIN_7  ,
- *													GPIO_PIN_8  ,
- *													GPIO_PIN_9  ,
- *													GPIO_PIN_10 ,
- *													GPIO_PIN_11 ,
- *													GPIO_PIN_12 ,
- *													GPIO_PIN_13 ,
- *													GPIO_PIN_14 ,
- *													GPIO_PIN_15 }
- *
- *					   - uint32_t pinValue: in range {0,
- *													  1}
- *
- * Return:         	   -uint8_t       : in range {  RT_PARAM,
- *	 											    RT_ERROR,
- *	 											    RT_SUCCESS }
- *
- * Input/Output Parameters:
- * 					-uint32_t* pinValue :in Range{
- * 												}
- * ***************************************************************************************************************/
-uint32_t GPIO_ReadPin(void* port, uint32_t pinNumber,uint32_t* pinValue){
-	if(port == NULL || pinNumber > 15 ){
-		return RT_PARAM;
-	}
-	*pinValue = (((volatile gpio_t*)port)->GPIO_IDR >> pinNumber) & BIT_MASK_0 ;
-	*pinValue = (((volatile gpio_t*)port)->GPIO_IDR >> pinNumber) & BIT_MASK_0 ;
+	else
+		return RT_PARAM ;
 
 	return RT_SUCCESS;
 }
 
-// what should this function do ???!!
-//uint32_t GPIO_SelectAF(gpio_t* port,uint32_t pinNumber,uint32_t AF){
-//	if(port == NULL || pinNumber > 15
-//		||(
-//		  AF != GPIO_AF0_SYSTEM				&&
-//		  AF != GPIO_AF1_TIM1_TIM2          &&
-//	      AF != GPIO_AF2_TIM3_5             &&
-//	      AF != GPIO_AF3_TIM8_11            &&
-//	      AF != GPIO_AF4_I2C1_3             &&
-//	      AF != GPIO_AF5_SPI1_SPI2          &&
-//	      AF != GPIO_AF6_SPI3               &&
-//	      AF != GPIO_AF7_USART1_3           &&
-//	      AF != GPIO_AF8_USART4_6           &&
-//	      AF != GPIO_AF9_CAN1_CAN2_TIM12_14 &&
-//	      AF != GPIO_AF10_OTG_FS__OTG_HS    &&
-//	      AF != GPIO_AF11_ETH               &&
-//	      AF != GPIO_AF12_FSMC_SDIO__OTG_HS1&&
-//	      AF != GPIO_AF13_DCMI              &&
-//	      AF != GPIO_AF14                   &&
-//	      AF != GPIO_AF15_EVENTOUT 			)
-//	){
-//		return RT_PARAM;
-//	}
-//
-//
-//}
 
-/* **************************************************************************************************************
- * Public Function: GPIO_Lock
- * Description: This function is used to turn the RCC clocks ON/OFF
- * Input Parameters:
+/* Public Function:  Gpio_TogglePin														      *
+ * Description: This function is used to Toggle Pin Status (HIGH <-> LOW)
+ * Input parameters:
+ *      - Gpio_Port		in range : { GPIOxx (xx : A , B , C , D , E , H)}
+ *      - Gpio_PinNum	in range : { GPIO_PINXX (xx :  0 .. 15)}
  *
- *				       - void* port     : in range { GPIO_PORTA ,
- *													GPIO_PORTB ,
- *													GPIO_PORTC ,
- *													GPIO_PORTD ,
- *													GPIO_PORTE ,
- *													GPIO_PORTF ,
- *													GPIO_PORTG ,
- *													GPIO_PORTH  }
+ * Return:
+ * 		- Status (uint8_t)
+ *         RT_SUCCESS
+ *         RT_PARAM
+ *         RT_ERROR
+ *         RT_TIME_OUT
  *
- *				       - uint32_t pinNum: in range { GPIO_PIN_0	,
- *													GPIO_PIN_1  ,
- *													GPIO_PIN_2  ,
- *													GPIO_PIN_3  ,
- *													GPIO_PIN_4  ,
- *													GPIO_PIN_5  ,
- *													GPIO_PIN_6  ,
- *													GPIO_PIN_7  ,
- *													GPIO_PIN_8  ,
- *													GPIO_PIN_9  ,
- *													GPIO_PIN_10 ,
- *													GPIO_PIN_11 ,
- *													GPIO_PIN_12 ,
- *													GPIO_PIN_13 ,
- *													GPIO_PIN_14 ,
- *													GPIO_PIN_15 }
- *
- * Return:         	   -uint8_t       : in range {  RT_PARAM,
- *	 											    RT_ERROR,
- *	 											    RT_SUCCESS }
- *
- * Input/Output Parameters:
- * 					-Not Applicable (void)
- * ***************************************************************************************************************/
-uint32_t GPIO_Lock(void* port,uint32_t lockPins){
-	if(port == NULL || !IS_GPIO_LCK_PINS(lockPins)){
-		return RT_PARAM;
+ * Input/Output Parameter:
+ * 		- Not Applicable
+
+ ***************************************************************************************************/
+uint8_t Gpio_TogglePin(void* Gpio_Port, uint32_t Gpio_PinNum){
+
+	volatile Gpio_t* Port   =	 Gpio_Port  ;
+
+	if (Gpio_PinNum <= GPIO_PIN15 && (Gpio_Port == GPIOA || Gpio_Port == GPIOB
+					|| Gpio_Port == GPIOC || Gpio_Port == GPIOD
+					|| Gpio_Port == GPIOE || Gpio_Port == GPIOH) ){
+
+		Port->ODR ^= 1 << Gpio_PinNum;
 	}
-	volatile uint32_t lock_reg=0;
-							/*the lock pin */
-	lock_reg = lockPins | BIT_MASK_16;
-	((gpio_t*)port)->GPIO_LCKR = lock_reg;
+	else
+		return RT_PARAM ;
 
-	lock_reg &= BIT_MASK_CLEAR_16;
-	((gpio_t*)port)->GPIO_LCKR = lock_reg;
-
-	lock_reg |= BIT_MASK_16;
-	((gpio_t*)port)->GPIO_LCKR = lock_reg;
-
-	lock_reg = ((gpio_t*)port)->GPIO_LCKR;
-
-	if (GET_BIT(((gpio_t*)port)->GPIO_LCKR,16)){
-    	return RT_SUCCESS;
-    }
-
-    return RT_ERROR;
+	return RT_SUCCESS;
 }
 
 
+/* Public Function:  Gpio_ReadPin														      *
+ * Description: This function is used to Read Gpio Pin Status ( High or Low)
+ * Input parameters:
+ *      - Gpio_Port		in range : { GPIOxx (xx : A , B , C , D , E , H)}
+ *      - Gpio_PinNum	in range : { GPIO_PINXX (xx :  0 .. 15)}
+ *
+ * Return:
+ * 		- Status (uint8_t)
+ *         RT_SUCCESS
+ *         RT_PARAM
+ *         RT_ERROR
+ *         RT_TIME_OUT
+ *
+ * Input/Output Parameter:
+ * 		- Gpio_Status 	in range : { 0x00 - 0x01 }
+
+ ***************************************************************************************************/
+uint8_t Gpio_ReadPin(void* Gpio_Port , uint32_t Gpio_PinNum , uint32_t* Gpio_PinStatus){
+
+	volatile Gpio_t * Port   =	 Gpio_Port ;
+	uint32_t Current_IDR = 0 ;
+
+	if ( Gpio_PinNum <= GPIO_PIN15 && (Gpio_Port == GPIOA || Gpio_Port == GPIOB
+					|| Gpio_Port == GPIOC || Gpio_Port == GPIOD
+					|| Gpio_Port == GPIOE || Gpio_Port == GPIOH) && (Gpio_PinStatus != NULL) ){
+
+		Current_IDR = (Port -> IDR) >> Gpio_PinNum ;
+		// IDR take time to be read
+		*Gpio_PinStatus = (uint32_t)(Current_IDR & (uint32_t)GPIO_IDR_READ)  ;
+	}
+	else{
+		return RT_PARAM ;
+	}
+
+	return RT_SUCCESS;
+}
+
+
+/* Public Function:  Gpio_LockPin														      *
+ * Description: This function is used to Lock Gpio Pins at a specific configuration.
+ * Input parameters:
+ *      - Gpio_Port		in range : { GPIOxx (xx : A , B , C , D , E , H)}
+ *      - Gpio_PinsNum	in range : { GPIO_PINxx_LCK (xx :  0 .. 15)}
+ *
+ * Return:
+ * 		- Status (uint8_t)
+ *         RT_SUCCESS
+ *         RT_PARAM
+ *         RT_ERROR
+ *         RT_TIME_OUT
+ *
+ * Input/Output Parameter:
+ *
+
+ ***************************************************************************************************/
+uint8_t Gpio_LockPin(void* Gpio_Port , uint32_t Gpio_PinsNum){
+
+	volatile Gpio_t *Port   =	Gpio_Port  ;
+	uint32_t Lock_Read =  0 ;
+	uint32_t Lock  = 0 ;
+
+	if ( Gpio_PinsNum > (uint32_t) 0   &&  Gpio_PinsNum <= GPIO_PIN_MASK
+			&& (Gpio_Port == GPIOA || Gpio_Port == GPIOB
+					|| Gpio_Port == GPIOC || Gpio_Port == GPIOD
+					|| Gpio_Port == GPIOE || Gpio_Port == GPIOH)) {
+
+		Lock_Read = Port -> LCKR ;
+		if ( !(Lock_Read & GPIO_LCKR_LCKK) ){
+
+			Lock |= GPIO_LCKR_LCKK ;
+			Lock = Gpio_PinsNum ;
+			Port -> LCKR  = Lock ; 			//‘1’ + LCKR[15:0]	//0x00010003
+			Port -> LCKR  = Gpio_PinsNum; 	//‘0’ + LCKR[15:0]	//0x00000003
+			Port -> LCKR  = Lock ;			//‘1’ + LCKR[15:0]	//0x00010003
+			Lock_Read = Port -> LCKR ;
+		}
+		else{
+			return RT_ERROR;
+		}
+	}
+	else{
+		return RT_PARAM;
+	}
+
+	Lock_Read = Port -> LCKR ;
+	if (!(Lock_Read & GPIO_LCKR_LCKK)){
+		return RT_ERROR;
+	}
+
+	return RT_SUCCESS;
+}
+
+
+/* Public Function:  Gpio_Select_AF														      *
+ * Description: This function is used to set the Alternative function for Gpio Pins.
+ * Input parameters:
+ *      - Gpio_Port		in range : { GPIOxx (xx : A , B , C , D , E , H)}
+ *      - Gpio_PinNum	in range : { GPIO_PINxx_LCK (xx :  0 .. 15)}
+ *      - Gpio_AF		in range : { GPIO_AFxx	(xx :  0 .. 15)}
+ *
+ * Return:
+ * 		- Status (uint8_t)
+ *         RT_SUCCESS
+ *         RT_PARAM
+ *         RT_ERROR
+ *         RT_TIME_OUT
+ *
+ * Input/Output Parameter:
+ *
+
+ ***************************************************************************************************/
+uint8_t Gpio_Select_AF(void *Gpio_Port , uint32_t Gpio_PinNum , uint32_t Gpio_AF){
+
+	volatile Gpio_t *Port  = Gpio_Port  ;
+	uint32_t Local_Reg	   = 0 ;
+	uint32_t Mode 		   = Port -> MODER & (GPIO_MODE_READ << (Gpio_PinNum << 1));
+	uint32_t Mode_AF 	   = GPIO_MODE_AF << (Gpio_PinNum << 1) ;
+
+	if (Gpio_PinNum <= GPIO_PIN15 && (Gpio_Port == GPIOA || Gpio_Port == GPIOB
+					|| Gpio_Port == GPIOC || Gpio_Port == GPIOD
+					|| Gpio_Port == GPIOE || Gpio_Port == GPIOH) && Gpio_AF <= GPIO_AF15_EVENTOUT ){
+
+		if (Mode == Mode_AF){
+
+			Local_Reg				      = Port -> AFR[Gpio_PinNum >> 3] ;
+			Local_Reg 			  	  	  &= ~(GPIO_AF_CLR << (Gpio_PinNum << 2)) ;
+			Local_Reg			  		  |= (Gpio_AF << (Gpio_PinNum << 2)) ;
+			Port -> AFR[Gpio_PinNum >> 3] = Local_Reg ;
+		}
+		else{
+			return RT_ERROR ;
+		}
+	}
+	return RT_SUCCESS;
+}

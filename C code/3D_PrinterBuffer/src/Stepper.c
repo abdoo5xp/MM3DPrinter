@@ -118,10 +118,11 @@ static RT_Debug Stepper_TimerPwmInit(void)
 	return Return_status;
 }
 
-extern RT_Debug Stepper_Continue(void)
+extern RT_Debug Stepper_Continue(StepperWorking_enu Stepper_Status)
 {
 	RT_Debug Return_status;
 
+	StepperWorking_Id[STEPPER_NUM - 1 ] = Stepper_Status ;
 
 	/********************************************************Timer Base Start********************************************************************/
 	(TimerBaseConfigs.Instance->SR) &= ~(TIM_IT_UPDATE);

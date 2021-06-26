@@ -277,12 +277,12 @@ extern RT_Debug Extruder_Pause()
  * 		- Not Applicable
 
  ***************************************************************************************************/
-extern RT_Debug Extruder_Continue(void)
+extern RT_Debug Extruder_Continue( ExtruderrWorking_enu Extruder_Status)
 {
 
 	RT_Debug Return_Status = RT_SUCCESS ;
 
-	Return_Status = Stepper_Continue();
+	Return_Status = Stepper_Continue(Extruder_Status);
 
 	return Return_Status ;
 

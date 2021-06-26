@@ -213,7 +213,7 @@ extern RT_Debug Stepper_Pause(void);
  * 		- Not Applicable
 
  ***************************************************************************************************/
-extern RT_Debug Stepper_Continue(void);
+extern RT_Debug Stepper_Continue(StepperWorking_enu Stepper_Status);
 
 
 

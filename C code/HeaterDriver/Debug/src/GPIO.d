@@ -1,13 +1,18 @@
-src/GPIO.o: ../src/GPIO.c ../src/../../lib/Bit_Mask.h \
- ../src/../../lib/Bit_Math.h ../src/../../lib/STM32_F407_Registers.h \
- ../src/../../lib/Error_codes.h ../src/GPIO.h
+src/Gpio.o: ../src/Gpio.c ../system/include/diag/Trace.h \
+ ../system/include/../../../lib/src/Bits.h \
+ ../system/include/../../../lib/src/Bit_Math.h \
+ ../system/include/../../../lib/src/RT_Debug.h \
+ ../system/include/../../../lib/src/stm32f407_Registers.h \
+ ../src/Gpio_int.h
 
-../src/../../lib/Bit_Mask.h:
+../system/include/diag/Trace.h:
 
-../src/../../lib/Bit_Math.h:
+../system/include/../../../lib/src/Bits.h:
 
-../src/../../lib/STM32_F407_Registers.h:
+../system/include/../../../lib/src/Bit_Math.h:
 
-../src/../../lib/Error_codes.h:
+../system/include/../../../lib/src/RT_Debug.h:
 
-../src/GPIO.h:
+../system/include/../../../lib/src/stm32f407_Registers.h:
+
+../src/Gpio_int.h:

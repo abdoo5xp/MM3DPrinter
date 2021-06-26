@@ -1,13 +1,15 @@
-src/Rcc.o: ../src/Rcc.c ../src/../../lib/Bit_Mask.h \
- ../src/../../lib/Bit_Math.h ../src/../../lib/STM32_F407_Registers.h \
- ../system/include/../../../lib/Error_codes.h ../src/Rcc.h
+src/Rcc.o: ../src/Rcc.c ../system/include/diag/Trace.h \
+ ../system/include/../../../lib/src/Bits.h \
+ ../system/include/../../../lib/src/RT_Debug.h \
+ ../system/include/../../../lib/src/stm32f407_Registers.h \
+ ../src/Rcc_int.h
 
-../src/../../lib/Bit_Mask.h:
+../system/include/diag/Trace.h:
 
-../src/../../lib/Bit_Math.h:
+../system/include/../../../lib/src/Bits.h:
 
-../src/../../lib/STM32_F407_Registers.h:
+../system/include/../../../lib/src/RT_Debug.h:
 
-../system/include/../../../lib/Error_codes.h:
+../system/include/../../../lib/src/stm32f407_Registers.h:
 
-../src/Rcc.h:
+../src/Rcc_int.h:

@@ -32,7 +32,7 @@ static void Buffer_IsFull(void)
 static void Buffer_IsEmpty(void)
 {
 	trace_printf("Allah Akbar <3 ");
-	Stepper_Continue();
+	Stepper_Continue(Stepper_Working);
 
 }
 
