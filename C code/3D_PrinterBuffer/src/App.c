@@ -95,9 +95,14 @@ static void App_vidMaterialSwap(uint8_t OldMaterial, uint8_t CurrentMaterial,uin
 		App_vidWaitForActionExecution();
 
 		/*join the two material to together */
-		HEATER_enuStart();
-		Service_enuDelay(APP_HEATING_TIME);
-		HEATER_enuStop();
+		for(uint8_t LoopIdx =0;LoopIdx < APP_NUMBER_OF_HEATING_TIMES; LoopIdx++)
+		{
+			HEATER_enuStart();
+			Service_enuDelay(APP_HEATING_TIME);
+			HEATER_enuStop();
+			Service_enuDelay(APP_HEATING_TIME);
+		}
+
 
 		/*Retract the offset material */
 		Extruder_SetDirection(CurrentMaterial ,EXTRUDER_DIR_CCW);
@@ -125,14 +130,21 @@ static void App_vidMaterialSwap(uint8_t OldMaterial, uint8_t CurrentMaterial,uin
 		/*Pause the Feed of the new material if Material Length > Offset Between Feeder and Heater
 		Extruder_Pause();
 
-
 		//trace_printf("Pause!!!! \n");
 	 	 */
 		/*join the two material to together */
-		HEATER_enuStart();
-		Service_enuDelay(APP_HEATING_TIME);
-		HEATER_enuStop();
+		/*join the two material to together */
 
+		/*Talsa2a Time */
+		Service_enuDelay(42000);
+
+		for(uint8_t LoopIdx =0;LoopIdx < APP_NUMBER_OF_HEATING_TIMES; LoopIdx++)
+		{
+			HEATER_enuStart();
+			Service_enuDelay(APP_HEATING_TIME);
+			HEATER_enuStop();
+			Service_enuDelay(APP_HEATING_TIME);
+		}
 		//trace_printf("Continue!!!! \n");
 
 		/*Continue the Feed of the new material if Material Length > Offset Between Feeder and Heater */

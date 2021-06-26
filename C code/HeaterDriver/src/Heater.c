@@ -46,7 +46,7 @@ extern Status_e HEATER_enuInit(uint8_t InitDutyCycle)
 	trace_printf("RCC-1  Enable Return = %d\n ",Rcc_AHB1_PeriClockStatus(RCC_AHB1_PERI_CLOCK_GPIOC, RCC_PERI_CLOCK_ENABLE));
 
 	/* timer peripheral enable */
-	trace_printf("RCC-2 Enable Return = %d\n ",Rcc_APB1_PeriClockStatus(RCC_APB1_PERI_CLOCK_TIM3, RCC_PERI_CLOCK_ENABLE));
+	//trace_printf("RCC-2 Enable Return = %d\n ",Rcc_APB1_PeriClockStatus(RCC_APB1_PERI_CLOCK_TIM3, RCC_PERI_CLOCK_ENABLE));
 
 	/* Init. the pin in GPIO */
 	trace_printf("GPIO Enable Return = %d\n ",Gpio_Init(&TimerConfigPin));
